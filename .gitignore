@@ -2,6 +2,9 @@
 credentials.json
 token.json
 
+# Cache files
+resume_cache.json
+
 # Python
 __pycache__/
 *.py[cod]

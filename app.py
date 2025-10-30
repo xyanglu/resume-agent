@@ -1,6 +1,8 @@
 import os.path
 import os
 import requests
+import time
+import json
 
 from langchain_openai import ChatOpenAI
 import gradio as gr
@@ -9,7 +11,32 @@ import gradio as gr
 DOCUMENT_ID = os.getenv('DOCUMENT_ID')
 
 def get_document_content():
-    """Retrieves content from a public Google Doc using the export feature."""
+    """Retrieves content from a public Google Doc using the export feature with caching."""
+    DOCUMENT_ID = os.getenv('DOCUMENT_ID')
+    
+    if not DOCUMENT_ID:
+        print("DOCUMENT_ID environment variable not set")
+        return None
+    
+    # Cache file path
+    cache_file = "resume_cache.json"
+    cache_duration = 300  # 5 minutes in seconds
+    
+    # Check if cache exists and is still valid
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                cache_data = json.load(f)
+            
+            # Check if cache is still valid
+            if time.time() - cache_data['timestamp'] < cache_duration:
+                print("Using cached resume content")
+                return cache_data['content']
+        except (json.JSONDecodeError, KeyError):
+            # Cache file is corrupted, remove it
+            os.remove(cache_file)
+    
+    # Fetch fresh content
     export_url = f"https://docs.google.com/document/d/{DOCUMENT_ID}/export?format=txt"
 
     try:
@@ -20,6 +47,16 @@ def get_document_content():
         full_text = response.text.strip()
         print("Resume Content Fetched:")
         print(full_text[:500] + "..." if len(full_text) > 500 else full_text)  # Print truncated version
+
+        # Save to cache
+        cache_data = {
+            'content': full_text,
+            'timestamp': time.time()
+        }
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        
+        print("Resume content cached for 5 minutes")
 
         return full_text
 

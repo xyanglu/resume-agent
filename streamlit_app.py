@@ -14,9 +14,8 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "resume_text" not in st.session_state:
-    st.session_state.resume_text = None
 
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_document_content():
     """Retrieves content from a public Google Doc using the export feature."""
     DOCUMENT_ID = os.getenv('DOCUMENT_ID')
@@ -99,14 +98,13 @@ def main():
     st.title("🤖 Candidate Resume Chatbot")
     st.markdown("Ask questions about the candidate. This chatbot only provides information from their resume.")
     
-    # Load resume content if not already loaded
-    if st.session_state.resume_text is None:
-        st.session_state.resume_text = get_document_content()
+    # Load resume content using cache
+    resume_text = get_document_content()
     
     # Initialize LLM
     llm = initialize_llm()
     
-    if st.session_state.resume_text is None or llm is None:
+    if resume_text is None or llm is None:
         st.stop()
     
     # Display chat messages
@@ -125,7 +123,7 @@ def main():
         
         # Generate and display assistant response
         with st.chat_message("assistant"):
-            response = generate_response(prompt, llm, st.session_state.resume_text)
+            response = generate_response(prompt, llm, resume_text)
         
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -133,15 +131,15 @@ def main():
     # Sidebar with resume preview
     with st.sidebar:
         st.header("📄 Resume Preview")
-        if st.session_state.resume_text:
-            preview_text = st.session_state.resume_text[:500] + "..." if len(st.session_state.resume_text) > 500 else st.session_state.resume_text
+        if resume_text:
+            preview_text = resume_text[:500] + "..." if len(resume_text) > 500 else resume_text
             st.text_area("Resume Content", preview_text, height=300, disabled=True)
             
             st.markdown("---")
-            st.markdown(f"**Total characters:** {len(st.session_state.resume_text)}")
+            st.markdown(f"**Total characters:** {len(resume_text)}")
             
-            if st.button("🔄 Reload Resume"):
-                st.session_state.resume_text = get_document_content()
+            if st.button("🔄 Clear Cache & Reload"):
+                st.cache_data.clear()
                 st.rerun()
         
         st.markdown("---")
