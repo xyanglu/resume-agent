@@ -43,7 +43,7 @@ def generate_resume_pdf(job_description,company_name):
     
     # Generate tailored resume
     prompt = f"""
-    You are a professional resume writer. Create a CONCISE 1-page tailored resume for {company_name if company_name else "this company"}.
+    You are a professional resume writer. Create an ULTRA-CONCISE 1-page resume for {company_name if company_name else "this company"}.
 
     CRITICAL RULES - DO NOT BREAK THESE:
     1. FIND and EXTRACT the candidate's NAME from the resume - MUST be at the very top
@@ -60,31 +60,38 @@ def generate_resume_pdf(job_description,company_name):
     Job Description:
     {job_description}
 
-    REQUIREMENTS - STRICTLY FOLLOW:
-    1. HEADER: Start with "# [Full Name]" - extract name from resume context
-    2. Professional Summary: Maximum 3 sentences, very concise
-    3. Skills: Only 5-7 most relevant bullet points
-    4. Experience: Only top 3 most relevant positions, 2-3 bullet points each
-    5. Education: Degree and school only, keep it brief
-    6. ONE PAGE LIMIT: Total word count under 300 words
-    7. Be extremely concise - no fluff, no paragraphs, only bullet points
-    8. Prioritize what matches job requirements
+    REQUIREMENTS - STRICTLY FOLLOW (MUST FIT ON 1 PAGE):
+    1. HEADER: "# [Full Name]" - extract name from resume context
+    2. Professional Summary: Exactly 2 sentences, 25 words max
+    3. Skills: Exactly 5 bullet points, 5-7 words each
+    4. Experience: Only TOP 2 most relevant positions, 2 bullet points each, 8-10 words per bullet
+    5. Education: Degree and school only, 10 words max
+    6. ABSOLUTE LIMIT: Total output under 1500 characters (not words!)
+    7. DELETE everything else - keep only essential info
+    8. Each bullet point must be under 10 words
+    9. No fluff, no filler words, no descriptions
 
-    Output in clean Markdown format (keep it SHORT):
+    Output in clean Markdown format (MUST be under 1500 characters total):
     # [CANDIDATE FULL NAME]
-    [Professional Summary - 2-3 sentences max]
+    [2 sentences, 25 words max]
 
     ## Skills
-    - [5-7 most relevant skills only]
+    - [skill 1 - 7 words max]
+    - [skill 2 - 7 words max]
+    - [skill 3 - 7 words max]
+    - [skill 4 - 7 words max]
+    - [skill 5 - 7 words max]
 
     ## Experience
     ### [Most Recent Position]
     **[Company Name]** | [Dates]
-    - [1-2 key achievements]
-    
+    - [achievement 1 - 10 words max]
+    - [achievement 2 - 10 words max]
+
     ### [Previous Position]
     **[Company Name]** | [Dates]
-    - [1-2 key achievements]
+    - [achievement 1 - 10 words max]
+    - [achievement 2 - 10 words max]
 
     ## Education
     **[Degree]** from [School]
@@ -164,47 +171,47 @@ def markdown_to_html(markdown_content, doc_type):
             <style>
                 body {{ 
                     font-family: 'Arial', sans-serif; 
-                    max-width: 750px; 
+                    max-width: 700px; 
                     margin: 0 auto; 
-                    padding: 30px 40px;
-                    font-size: 10pt;
-                    line-height: 1.3;
+                    padding: 20px 30px;
+                    font-size: 9pt;
+                    line-height: 1.2;
                 }}
                 h1 {{ 
                     color: #2c3e50; 
-                    font-size: 16pt;
+                    font-size: 14pt;
                     font-weight: bold;
                     border-bottom: 2px solid #3498db; 
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
+                    padding-bottom: 5px;
+                    margin-bottom: 10px;
                 }}
                 h2 {{ 
                     color: #2c3e50; 
-                    font-size: 11pt;
+                    font-size: 10pt;
                     font-weight: bold;
                     text-transform: uppercase;
-                    margin-top: 15px;
-                    margin-bottom: 8px;
+                    margin-top: 12px;
+                    margin-bottom: 5px;
                 }}
                 h3 {{ 
                     color: #34495e; 
-                    font-size: 10pt;
+                    font-size: 9pt;
                     font-weight: bold;
-                    margin-top: 10px;
-                    margin-bottom: 5px;
+                    margin-top: 8px;
+                    margin-bottom: 3px;
                 }}
                 p {{ 
-                    margin: 5px 0;
-                    line-height: 1.3;
+                    margin: 3px 0;
+                    line-height: 1.2;
                 }}
                 ul {{ 
-                    line-height: 1.3; 
-                    margin: 5px 0;
-                    padding-left: 20px;
+                    line-height: 1.2; 
+                    margin: 3px 0;
+                    padding-left: 15px;
                 }}
                 li {{ 
-                    margin-bottom: 3px;
-                    font-size: 10pt;
+                    margin-bottom: 2px;
+                    font-size: 9pt;
                 }}
                 strong {{
                     font-weight: 600;
