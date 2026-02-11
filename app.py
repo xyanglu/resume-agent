@@ -46,12 +46,13 @@ def generate_resume_pdf(job_description,company_name):
     You are a professional resume writer. Create a CONCISE 1-page tailored resume for {company_name if company_name else "this company"}.
 
     CRITICAL RULES - DO NOT BREAK THESE:
-    1. ONLY use information from the resume below
-    2. If dates are not in the resume, DO NOT make them up - use "Present" or omit
-    3. DO NOT invent job titles, companies, or durations
-    4. DO NOT add skills not listed in the resume
-    5. Keep work experiences exactly as they appear in the resume
-    6. If information is missing, leave it out rather than inventing
+    1. FIND and EXTRACT the candidate's NAME from the resume - MUST be at the very top
+    2. ONLY use information from the resume below
+    3. If dates are not in the resume, DO NOT make them up - use "Present" or omit
+    4. DO NOT invent job titles, companies, or durations
+    5. DO NOT add skills not listed in the resume
+    6. Keep work experiences exactly as they appear in the resume
+    7. If information is missing, leave it out rather than inventing
 
     Resume:
     {resume_context}
@@ -59,30 +60,34 @@ def generate_resume_pdf(job_description,company_name):
     Job Description:
     {job_description}
 
-    Requirements:
-    1. START with the candidate's NAME at the top (extract from resume)
-    2. Professional Summary (2-3 sentences)
-    3. Skills (relevant bullet points ONLY from resume)
-    4. Experience (most relevant positions, condensed - keep original dates)
-    5. Education (include degree, school, major - MUST be included)
-    6. Keep to ONE PAGE maximum
-    7. Prioritize what matches job requirements
-    8. Use concise bullet points, not paragraphs
+    REQUIREMENTS - STRICTLY FOLLOW:
+    1. HEADER: Start with "# [Full Name]" - extract name from resume context
+    2. Professional Summary: Maximum 3 sentences, very concise
+    3. Skills: Only 5-7 most relevant bullet points
+    4. Experience: Only top 3 most relevant positions, 2-3 bullet points each
+    5. Education: Degree and school only, keep it brief
+    6. ONE PAGE LIMIT: Total word count under 300 words
+    7. Be extremely concise - no fluff, no paragraphs, only bullet points
+    8. Prioritize what matches job requirements
 
-    Output in clean Markdown format:
-    # [Candidate Name]
-    [Professional Summary]
+    Output in clean Markdown format (keep it SHORT):
+    # [CANDIDATE FULL NAME]
+    [Professional Summary - 2-3 sentences max]
 
     ## Skills
-    - [bullet points]
+    - [5-7 most relevant skills only]
 
     ## Experience
-    - [Position] at [Company], [Dates from resume]
-    - [key achievement 1]
-    - [key achievement 2]
+    ### [Most Recent Position]
+    **[Company Name]** | [Dates]
+    - [1-2 key achievements]
+    
+    ### [Previous Position]
+    **[Company Name]** | [Dates]
+    - [1-2 key achievements]
 
     ## Education
-    - [Degree] from [School]
+    **[Degree]** from [School]
     """
     
     dates_in_resume = extract_dates(resume_context)
@@ -157,11 +162,53 @@ def markdown_to_html(markdown_content, doc_type):
         <html>
         <head>
             <style>
-                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; }}
-                h1 {{ color: #2c3e50; border-bottom: 2px solid #3498db; }}
-                h2 {{ color: #2c3e50; margin-top: 30px; }}
-                ul {{ line-height: 1.6; }}
-                li {{ margin-bottom: 8px; }}
+                body {{ 
+                    font-family: 'Arial', sans-serif; 
+                    max-width: 750px; 
+                    margin: 0 auto; 
+                    padding: 30px 40px;
+                    font-size: 10pt;
+                    line-height: 1.3;
+                }}
+                h1 {{ 
+                    color: #2c3e50; 
+                    font-size: 16pt;
+                    font-weight: bold;
+                    border-bottom: 2px solid #3498db; 
+                    padding-bottom: 10px;
+                    margin-bottom: 15px;
+                }}
+                h2 {{ 
+                    color: #2c3e50; 
+                    font-size: 11pt;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    margin-top: 15px;
+                    margin-bottom: 8px;
+                }}
+                h3 {{ 
+                    color: #34495e; 
+                    font-size: 10pt;
+                    font-weight: bold;
+                    margin-top: 10px;
+                    margin-bottom: 5px;
+                }}
+                p {{ 
+                    margin: 5px 0;
+                    line-height: 1.3;
+                }}
+                ul {{ 
+                    line-height: 1.3; 
+                    margin: 5px 0;
+                    padding-left: 20px;
+                }}
+                li {{ 
+                    margin-bottom: 3px;
+                    font-size: 10pt;
+                }}
+                strong {{
+                    font-weight: 600;
+                }}
             </style>
         </head>
         <body>
@@ -174,7 +221,14 @@ def markdown_to_html(markdown_content, doc_type):
         <html>
         <head>
             <style>
-                body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; line-height: 1.6; }}
+                body {{ 
+                    font-family: Arial, sans-serif; 
+                    max-width: 600px; 
+                    margin: 0 auto; 
+                    padding: 40px; 
+                    line-height: 1.6;
+                    font-size: 11pt;
+                }}
                 p {{ margin-bottom: 15px; }}
             </style>
         </head>
