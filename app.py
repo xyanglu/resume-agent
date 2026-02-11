@@ -41,77 +41,85 @@ def generate_resume_pdf(job_description,company_name):
     )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
     
-    # Generate tailored resume
-    prompt = f"""
-    You are a professional resume writer. Create an ULTRA-CONCISE 1-page resume for {company_name if company_name else "this company"}.
-
-    CRITICAL RULES - DO NOT BREAK THESE:
-    1. FIND and EXTRACT the candidate's NAME from the resume - MUST be at the very top
-    2. ONLY use information from the resume below
-    3. If dates are not in the resume, DO NOT make them up - use "Present" or omit
-    4. DO NOT invent job titles, companies, or durations
-    5. DO NOT add skills not listed in the resume
-    6. Keep work experiences exactly as they appear in the resume
-    7. If information is missing, leave it out rather than inventing
-
+    # Step 1: Extract name first
+    name_prompt = f"""
+    Extract ONLY the candidate's full name from this resume context.
+    Return ONLY the name, nothing else.
     Resume:
+    {resume_context}
+    """
+    
+    llm = ChatOpenAI(
+        model="glm-4.7-flash",
+        openai_api_key=os.getenv("ZAI_API_KEY"),
+        openai_api_base="https://api.z.ai/api/paas/v4/",
+        temperature=0.1
+    )
+    
+    name_response = llm.invoke(name_prompt)
+    candidate_name = name_response.content.strip()
+    # Clean up name response
+    if len(candidate_name.split()) > 5:  # If too many words, take first 2
+        candidate_name = " ".join(candidate_name.split()[:2])
+    candidate_name = candidate_name.replace("#", "").replace("*", "").strip()
+    
+    # Step 2: Generate resume with extracted name
+    prompt = f"""
+    Create a 1-page resume for {company_name if company_name else "this company"}.
+
+    CANDIDATE NAME: {candidate_name}
+    USE THIS EXACT NAME AT THE TOP
+
+    Resume Context:
     {resume_context}
 
     Job Description:
     {job_description}
 
-    REQUIREMENTS - STRICTLY FOLLOW (MUST FIT ON 1 PAGE):
-    1. HEADER: "# [Full Name]" - extract name from resume context
-    2. Professional Summary: Exactly 2 sentences, 25 words max
-    3. Skills: Exactly 5 bullet points, 5-7 words each
-    4. Experience: Only TOP 2 most relevant positions, 2 bullet points each, 8-10 words per bullet
-    5. Education: Degree and school only, 10 words max
-    6. ABSOLUTE LIMIT: Total output under 1500 characters (not words!)
-    7. DELETE everything else - keep only essential info
-    8. Each bullet point must be under 10 words
-    9. No fluff, no filler words, no descriptions
+    STRICT REQUIREMENTS:
+    1. Start with: # {candidate_name}
+    2. Summary: 2 sentences, 20 words max
+    3. Skills: 5 bullet points, 5 words each
+    4. Experience: 1 job only, 2 bullets, 8 words each
+    5. Education: 1 line, 10 words max
+    6. TOTAL LIMIT: Under 800 characters
+    7. No filler, no descriptions
 
-    Output in clean Markdown format (MUST be under 1500 characters total):
-    # [CANDIDATE FULL NAME]
-    [2 sentences, 25 words max]
+    OUTPUT FORMAT:
+    # {candidate_name}
+    [20-word summary]
 
     ## Skills
-    - [skill 1 - 7 words max]
-    - [skill 2 - 7 words max]
-    - [skill 3 - 7 words max]
-    - [skill 4 - 7 words max]
-    - [skill 5 - 7 words max]
+    - [5-word skill]
+    - [5-word skill]
+    - [5-word skill]
+    - [5-word skill]
+    - [5-word skill]
 
     ## Experience
-    ### [Most Recent Position]
-    **[Company Name]** | [Dates]
-    - [achievement 1 - 10 words max]
-    - [achievement 2 - 10 words max]
-
-    ### [Previous Position]
-    **[Company Name]** | [Dates]
-    - [achievement 1 - 10 words max]
-    - [achievement 2 - 10 words max]
+    ### [Position]
+    **[Company]** | [Dates]
+    - [8-word bullet]
+    - [8-word bullet]
 
     ## Education
-    **[Degree]** from [School]
+    [Degree] from [School]
     """
     
     dates_in_resume = extract_dates(resume_context)
-    prompt += f"""
-    DATES FOUND IN RESUME: {', '.join(dates_in_resume)}
-    ONLY use these dates - do not invent others.
-    """
+    if dates_in_resume:
+        prompt += f"\nDATES: {', '.join(dates_in_resume[:3])}"
 
-    llm = ChatOpenAI(
-        model="glm-4.7-flash",
-        openai_api_key=os.getenv("ZAI_API_KEY"),
-        openai_api_base="https://api.z.ai/api/paas/v4/",
-        temperature=0.3
-    )
-    
     response = llm.invoke(prompt)
-    resume_markdown = response.content
+    resume_markdown = response.content.strip()
+    
+    # Ensure name is at the top
+    if not resume_markdown.startswith("#"):
+        resume_markdown = f"# {candidate_name}\n\n{resume_markdown}"
+    
+    # Truncate if too long
+    if len(resume_markdown) > 800:
+        resume_markdown = resume_markdown[:800]
     
     # Convert to HTML then PDF
     html_content = markdown_to_html(resume_markdown, "resume")
