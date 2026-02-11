@@ -19,45 +19,83 @@ st.set_page_config(
     layout="wide"
 )
 
-def generate_resume_pdf(job_description):
+def extract_dates(resume_context):
+    """Extract date ranges from resume context"""
+    import re
+    date_patterns = [
+        r'\d{4}',  # Years like 2020
+        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\s*\d{4}',  # Jan 2020
+        r'(?:Present|Current)',  # Current positions
+    ]
+    dates_found = []
+    for pattern in date_patterns:
+        dates_found.extend(re.findall(pattern, resume_context, re.IGNORECASE))
+    return list(set(dates_found))
+
+def generate_resume_pdf(job_description,company_name):
     """Generate a tailored resume PDF based on job description."""
     # Get resume content from RAG
-    retriever = st.session_state.vectorstore.as_retriever(search_kwargs={"k": 10})
-    docs = st.session_state.vectorstore.similarity_search("entire resume summary and all experience", k=10)
+    docs = st.session_state.vectorstore.similarity_search(
+        "education skills experience work history qualifications", 
+        k=15  # Increase to get more context
+    )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
     
     # Generate tailored resume
     prompt = f"""
-    You are a professional resume writer. Tailor this resume to match the job description.
-    
-    IMPORTANT: Do NOT make up information. Only highlight and reorganize existing skills/experience.
-    Keep all facts accurate.
-    
+    You are a professional resume writer. Create a CONCISE 1-page tailored resume for {company_name if company_name else "this company"}.
+
+    CRITICAL RULES - DO NOT BREAK THESE:
+    1. ONLY use information from the resume below
+    2. If dates are not in the resume, DO NOT make them up - use "Present" or omit
+    3. DO NOT invent job titles, companies, or durations
+    4. DO NOT add skills not listed in the resume
+    5. Keep work experiences exactly as they appear in the resume
+    6. If information is missing, leave it out rather than inventing
+
     Resume:
     {resume_context}
-    
+
     Job Description:
     {job_description}
-    
-    Create a tailored resume that:
-    1. Emphasizes matching skills and experience
-    2. Reorders sections to prioritize relevant content
-    3. Uses language that aligns with job requirements
-    4. Maintains all factual accuracy
-    
-    Output in clean Markdown format with sections:
-    - # Name
-    - Professional Summary
-    - Skills
-    - Experience
-    - Education
+
+    Requirements:
+    1. START with the candidate's NAME at the top (extract from resume)
+    2. Professional Summary (2-3 sentences)
+    3. Skills (relevant bullet points ONLY from resume)
+    4. Experience (most relevant positions, condensed - keep original dates)
+    5. Education (include degree, school, major - MUST be included)
+    6. Keep to ONE PAGE maximum
+    7. Prioritize what matches job requirements
+    8. Use concise bullet points, not paragraphs
+
+    Output in clean Markdown format:
+    # [Candidate Name]
+    [Professional Summary]
+
+    ## Skills
+    - [bullet points]
+
+    ## Experience
+    - [Position] at [Company], [Dates from resume]
+    - [key achievement 1]
+    - [key achievement 2]
+
+    ## Education
+    - [Degree] from [School]
     """
     
+    dates_in_resume = extract_dates(resume_context)
+    prompt += f"""
+    DATES FOUND IN RESUME: {', '.join(dates_in_resume)}
+    ONLY use these dates - do not invent others.
+    """
+
     llm = ChatOpenAI(
         model="glm-4.7-flash",
         openai_api_key=os.getenv("ZAI_API_KEY"),
         openai_api_base="https://api.z.ai/api/paas/v4/",
-        temperature=0.7
+        temperature=0.3
     )
     
     response = llm.invoke(prompt)
@@ -69,16 +107,15 @@ def generate_resume_pdf(job_description):
     
     return pdf_bytes
 
-def generate_cover_letter_pdf(job_description):
+def generate_cover_letter_pdf(job_description,company_name):
     """Generate a cover letter PDF based on job description."""
     # Get resume content from RAG
-    retriever = st.session_state.vectorstore.as_retriever(search_kwargs={"k": 10})
     docs = st.session_state.vectorstore.similarity_search("entire resume summary and all experience", k=10)
     resume_context = "\n\n".join([doc.page_content for doc in docs])
     
     # Generate cover letter
     prompt = f"""
-    Write a professional cover letter based on this resume and job description.
+    Write a professional cover letter for {company_name if company_name else "this company"} based on this resume and job description.
     
     Resume:
     {resume_context}
@@ -100,7 +137,7 @@ def generate_cover_letter_pdf(job_description):
         model="glm-4.7-flash",
         openai_api_key=os.getenv("ZAI_API_KEY"),
         openai_api_base="https://api.z.ai/api/paas/v4/",
-        temperature=0.8
+        temperature=0.3
     )
     
     response = llm.invoke(prompt)
@@ -274,6 +311,11 @@ st.header("📄 Customize Your Application")
 with st.expander("Generate Custom Resume & Cover Letter", expanded=False):
     st.write("Paste a job description to get a tailored resume and cover letter.")
     
+    company_name = st.text_input(
+        "Company Name (optional)",
+        placeholder="e.g., Google, Microsoft, Amazon"
+    )
+    
     job_description = st.text_area(
         "Job Description",
         height=200,
@@ -283,28 +325,34 @@ with st.expander("Generate Custom Resume & Cover Letter", expanded=False):
     if st.button("Generate PDF Documents", type="primary"):
         if job_description:
             with st.spinner("📄 Generating your customized documents..."):
-                # Generate resume PDF
-                resume_pdf = generate_resume_pdf(job_description)
+                # Generate PDFs with company name
+                resume_pdf = generate_resume_pdf(job_description, company_name)
+                cover_letter_pdf = generate_cover_letter_pdf(job_description, company_name)
                 
-                # Generate cover letter PDF
-                cover_letter_pdf = generate_cover_letter_pdf(job_description)
-                
-                # Show download buttons
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.download_button(
-                        label="📥 Download Custom Resume",
-                        data=resume_pdf,
-                        file_name="custom_resume.pdf",
-                        mime="application/pdf"
-                    )
-                with col2:
-                    st.download_button(
-                        label="📥 Download Cover Letter",
-                        data=cover_letter_pdf,
-                        file_name="cover_letter.pdf",
-                        mime="application/pdf"
-                    )
+                # Save to session state
+                st.session_state.resume_pdf = resume_pdf
+                st.session_state.cover_letter_pdf = cover_letter_pdf
+                st.session_state.company_name = company_name
+
+    # Show download buttons if PDFs exist
+    if "resume_pdf" in st.session_state:
+        col1, col2 = st.columns(2)
+        with col1:
+            # Use company name in filename
+            company = st.session_state.company_name or "custom"
+            st.download_button(
+                label="📥 Download Custom Resume",
+                data=st.session_state.resume_pdf,
+                file_name=f"{company}_resume.pdf",
+                mime="application/pdf"
+            )
+        with col2:
+            st.download_button(
+                label="📥 Download Cover Letter",
+                data=st.session_state.cover_letter_pdf,
+                file_name=f"{company}_cover_letter.pdf",
+                mime="application/pdf"
+            )
 
 # Footer
 st.divider()
