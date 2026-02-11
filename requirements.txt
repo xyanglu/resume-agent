@@ -1,5 +1,12 @@
-langchain
-langchain-openai
-gradio
 streamlit
+langchain
+langchain-community
+langchain-openai
+langchain-classic
+chromadb
+sentence-transformers
+google-api-python-client
+google-auth
 requests
+weasyprint
+markdown
