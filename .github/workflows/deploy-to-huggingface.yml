@@ -3,7 +3,7 @@ name: Deploy to Hugging Face
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   deploy:
@@ -22,7 +22,7 @@ jobs:
         run: |
           git clone https://huggingface.co/spaces/xyanglu/resume-agent-chatbot hf_space
           cd hf_space
-          git checkout -b master || git checkout master
+          git checkout -b main || git checkout main
       
       - name: Copy files to HuggingFace Space
         run: |
@@ -37,4 +37,4 @@ jobs:
           cd hf_space
           git add .
           git diff --quiet && git diff --staged --quiet || git commit -m "Update from GitHub"
-          git push https://hf:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/xyanglu/resume-agent-chatbot master
+          git push https://hf:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/xyanglu/resume-agent-chatbot main
