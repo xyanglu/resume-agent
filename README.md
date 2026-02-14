@@ -1,3 +1,13 @@
+---
+title: Resume Agent Chatbot
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
 # Resume Agent Chatbot 🤖
 
 An AI-powered chatbot that answers questions about a candidate using their resume from Google Docs. This Space demonstrates dynamic document integration and conversational AI deployment.
