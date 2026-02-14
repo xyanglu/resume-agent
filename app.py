@@ -16,7 +16,8 @@ import markdown
 st.set_page_config(
     page_title="RAG Resume Chatbot",
     page_icon="📄",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 def extract_dates(resume_context):
@@ -43,8 +44,8 @@ def generate_resume_pdf(job_description,company_name):
     
     # Step 1: Extract name first
     name_prompt = f"""
-    Extract ONLY the candidate's full name from this resume context.
-    Return ONLY the name, nothing else.
+    Extract ONLY candidate's full name from this resume context.
+    Return ONLY name, nothing else.
     Resume:
     {resume_context}
     """
@@ -256,11 +257,73 @@ def markdown_to_html(markdown_content, doc_type):
     html = markdown.markdown(markdown_content)
     return template.format(content=html)
 
-# Title and description
+# Sidebar - PDF Generation
+with st.sidebar:
+    st.header("📋 PDF Generation")
+    
+    with st.expander("Generate Custom Resume & Cover Letter", expanded=False):
+        st.write("Paste a job description to get a tailored resume and cover letter.")
+        
+        company_name = st.text_input(
+            "Company Name (optional)",
+            placeholder="e.g., Google, Microsoft, Amazon"
+        )
+        
+        job_description = st.text_area(
+            "Job Description",
+            height=200,
+            placeholder="Paste job description here..."
+        )
+        
+        if st.button("Generate PDF Documents", type="primary"):
+            if job_description:
+                with st.spinner("📄 Generating your customized documents..."):
+                    # Generate PDFs with company name
+                    resume_pdf = generate_resume_pdf(job_description, company_name)
+                    cover_letter_pdf = generate_cover_letter_pdf(job_description, company_name)
+                    
+                    # Save to session state
+                    st.session_state.resume_pdf = resume_pdf
+                    st.session_state.cover_letter_pdf = cover_letter_pdf
+                    st.session_state.company_name = company_name
+                    st.success("✅ PDFs generated successfully!")
+
+        # Show download buttons if PDFs exist
+        if "resume_pdf" in st.session_state:
+            st.divider()
+            st.write("📥 Download your documents:")
+            st.download_button(
+                label="📄 Download Resume",
+                data=st.session_state.resume_pdf,
+                file_name=f"{st.session_state.company_name or 'custom'}_resume.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            st.download_button(
+                label="✉️ Download Cover Letter",
+                data=st.session_state.cover_letter_pdf,
+                file_name=f"{st.session_state.company_name or 'custom'}_cover_letter.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+    
+    st.divider()
+    st.markdown("""
+    **ℹ️ About**
+    
+    This app uses:
+    - 📄 Google Docs API
+    - 🔢 Vector embeddings
+    - 🤖 Z.AI GLM-4.7-Flash
+    """)
+
+# Main area - Title and description
 st.title("📄 RAG Resume Chatbot")
 st.markdown("""
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
 It loads your resume from Google Docs, creates embeddings, and uses Z.AI's GLM-4.7-Flash.
+
+👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
 """)
 
 # Initialize session state
@@ -373,61 +436,11 @@ if prompt := st.chat_input("Ask a question about the resume..."):
     
     st.session_state.messages.append({"role": "assistant", "content": response})
 
-
-# 2. PDF generation expander 
-st.header("📄 Customize Your Application")
-
-with st.expander("Generate Custom Resume & Cover Letter", expanded=False):
-    st.write("Paste a job description to get a tailored resume and cover letter.")
-    
-    company_name = st.text_input(
-        "Company Name (optional)",
-        placeholder="e.g., Google, Microsoft, Amazon"
-    )
-    
-    job_description = st.text_area(
-        "Job Description",
-        height=200,
-        placeholder="Paste the job description here..."
-    )
-    
-    if st.button("Generate PDF Documents", type="primary"):
-        if job_description:
-            with st.spinner("📄 Generating your customized documents..."):
-                # Generate PDFs with company name
-                resume_pdf = generate_resume_pdf(job_description, company_name)
-                cover_letter_pdf = generate_cover_letter_pdf(job_description, company_name)
-                
-                # Save to session state
-                st.session_state.resume_pdf = resume_pdf
-                st.session_state.cover_letter_pdf = cover_letter_pdf
-                st.session_state.company_name = company_name
-
-    # Show download buttons if PDFs exist
-    if "resume_pdf" in st.session_state:
-        col1, col2 = st.columns(2)
-        with col1:
-            # Use company name in filename
-            company = st.session_state.company_name or "custom"
-            st.download_button(
-                label="📥 Download Custom Resume",
-                data=st.session_state.resume_pdf,
-                file_name=f"{company}_resume.pdf",
-                mime="application/pdf"
-            )
-        with col2:
-            st.download_button(
-                label="📥 Download Cover Letter",
-                data=st.session_state.cover_letter_pdf,
-                file_name=f"{company}_cover_letter.pdf",
-                mime="application/pdf"
-            )
-
 # Footer
 st.divider()
 st.markdown("""
 ---
-**Made with ❤️ using Streamlit, LangChain, and HuggingFace**
+**Made with ❤️ using Streamlit, LangChain, and Z.AI**
 
 - 📄 Resume loaded from Google Docs
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
