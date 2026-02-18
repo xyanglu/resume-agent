@@ -54,7 +54,7 @@ def initialize_llm():
         )
     else:
         api_key = os.getenv('ZAI_API_KEY')
-        model_name = os.getenv('MODEL_NAME', 'glm-4.5-flash')
+        model_name = os.getenv('MODEL_NAME', 'glm-4.7-flash')
 
         if not api_key:
             st.error("ZAI_API_KEY environment variable not set")

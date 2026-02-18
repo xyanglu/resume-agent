@@ -33,7 +33,7 @@ An AI-powered chatbot that answers questions about a candidate using their resum
 
 - **Frontend**: Gradio & Streamlit (Dual Web UI options)
 - **Backend**: Python, LangChain
-- **AI Model**: Z.AI GLM-4.5-flash or Google Gemini 3 Flash (via LangChain)
+- **AI Model**: Z.AI GLM-4.7-flash or Google Gemini 3 Flash (via LangChain)
 - **Data Source**: Google Docs (public export)
 - **Caching**: Streamlit cache (5min TTL) & File-based cache (Gradio)
 - **Hosting**: Hugging Face Spaces
@@ -78,7 +78,7 @@ The app supports both Z.AI and Google Gemini. To switch between them, set the fo
 ```bash
 USE_GEMINI=false
 ZAI_API_KEY=your_zai_api_key
-MODEL_NAME=glm-4.5-flash
+MODEL_NAME=glm-4.7-flash
 ```
 
 **Option 2: Google Gemini (Free Tier)**
