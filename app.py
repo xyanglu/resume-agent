@@ -314,14 +314,14 @@ with st.sidebar:
     This app uses:
     - 📄 Google Docs API
     - 🔢 Vector embeddings
-    - 🤖 Z.AI GLM-4.7-Flash
+    - 🤖 Z.AI {model}
     """)
 
 # Main area - Title and description
 st.title("📄 RAG Resume Chatbot")
 st.markdown("""
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
-It loads your resume from Google Docs, creates embeddings, and uses Z.AI's GLM-4.7-Flash.
+It loads your resume from Google Docs, creates embeddings, and uses Z.AI's {model}.
 
 👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
 """)
@@ -444,5 +444,5 @@ st.markdown("""
 
 - 📄 Resume loaded from Google Docs
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
-- 🤖 AI Model: Z.AI (glm-4.7-flash)
+- 🤖 AI Model: Z.AI ({model})
 """)
