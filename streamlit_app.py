@@ -42,13 +42,14 @@ def get_document_content():
 def initialize_llm():
     """Initialize the LLM with Z.AI API configuration."""
     API_KEY = os.getenv('ZAI_API_KEY')
-    
+    MODEL_NAME = os.getenv('MODEL_NAME', 'glm-4.5-flash')
+
     if not API_KEY:
         st.error("ZAI_API_KEY environment variable not set")
         return None
-    
+
     return ChatOpenAI(
-        model="glm-4.5-flash",
+        model=MODEL_NAME,
         openai_api_key=API_KEY,
         openai_api_base="https://api.z.ai/api/paas/v4/",
         streaming=True

@@ -51,7 +51,7 @@ def generate_resume_pdf(job_description,company_name):
     """
     
     llm = ChatOpenAI(
-        model="glm-4.7-flash",
+        model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
         openai_api_key=os.getenv("ZAI_API_KEY"),
         openai_api_base="https://api.z.ai/api/paas/v4/",
         temperature=0.1
@@ -155,7 +155,7 @@ def generate_cover_letter_pdf(job_description,company_name):
     """
     
     llm = ChatOpenAI(
-        model="glm-4.7-flash",
+        model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
         openai_api_key=os.getenv("ZAI_API_KEY"),
         openai_api_base="https://api.z.ai/api/paas/v4/",
         temperature=0.3
@@ -397,7 +397,7 @@ if st.session_state.qa_chain is None:
         
         with st.spinner("🤖 Loading AI model..."):
             llm = ChatOpenAI(
-                model="glm-4.7-flash",
+                model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
                 openai_api_key=zai_api_key,
                 openai_api_base="https://api.z.ai/api/paas/v4/",
                 temperature=0.7
