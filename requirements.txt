@@ -2,6 +2,7 @@ streamlit
 langchain
 langchain-community
 langchain-openai
+langchain-google-genai
 langchain-classic
 chromadb
 sentence-transformers
