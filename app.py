@@ -308,9 +308,10 @@ with st.sidebar:
             )
     
     st.divider()
-    st.markdown("""
+    model = os.getenv("MODEL_NAME", "glm-4.7-flash")
+    st.markdown(f"""
     **ℹ️ About**
-    
+
     This app uses:
     - 📄 Google Docs API
     - 🔢 Vector embeddings
@@ -319,7 +320,8 @@ with st.sidebar:
 
 # Main area - Title and description
 st.title("📄 RAG Resume Chatbot")
-st.markdown("""
+model = os.getenv("MODEL_NAME", "glm-4.7-flash")
+st.markdown(f"""
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
 It loads your resume from Google Docs, creates embeddings, and uses Z.AI's {model}.
 
@@ -438,7 +440,8 @@ if prompt := st.chat_input("Ask a question about the resume..."):
 
 # Footer
 st.divider()
-st.markdown("""
+model = os.getenv("MODEL_NAME", "glm-4.7-flash")
+st.markdown(f"""
 ---
 **Made with ❤️ using Streamlit, LangChain, and Z.AI**
 
