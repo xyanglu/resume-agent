@@ -62,8 +62,8 @@ def initialize_llm():
 
         return ChatOpenAI(
             model=model_name,
-            openai_api_key=api_key,
-            openai_base_url="https://api.z.ai/api/paas/v4/",
+            api_key=api_key,
+            base_url="https://api.z.ai/api/paas/v4/",
             streaming=True
         )
 

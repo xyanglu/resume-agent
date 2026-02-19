@@ -24,8 +24,8 @@ def get_llm(temperature=0.1):
     else:
         return ChatOpenAI(
             model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
-            openai_api_key=os.getenv("ZAI_API_KEY"),
-            openai_base_url="https://api.z.ai/api/paas/v4/",
+            api_key=os.getenv("ZAI_API_KEY"),
+            base_url="https://api.z.ai/api/paas/v4/",
             temperature=temperature,
         )
 
@@ -429,8 +429,8 @@ if st.session_state.qa_chain is None:
             else:
                 llm = ChatOpenAI(
                     model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
-                    openai_api_key=zai_api_key,
-                    openai_base_url="https://api.z.ai/api/paas/v4/",
+                    api_key=zai_api_key,
+                    base_url="https://api.z.ai/api/paas/v4/",
                     temperature=0.7,
                 )
 
