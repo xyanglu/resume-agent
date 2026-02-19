@@ -2,7 +2,6 @@ import streamlit as st
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from google.oauth2 import service_account
@@ -15,19 +14,12 @@ import markdown
 
 
 def get_llm(temperature=0.1):
-    if os.getenv("USE_GEMINI", "false").lower() == "true":
-        return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
-            google_api_key=os.getenv("GOOGLE_API_KEY"),
-            temperature=temperature,
-        )
-    else:
-        return ChatOpenAI(
-            model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
-            api_key=os.getenv("ZAI_API_KEY"),
-            base_url="https://api.z.ai/api/paas/v4/",
-            temperature=temperature,
-        )
+    return ChatOpenAI(
+        model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
+        api_key=os.getenv("ZAI_API_KEY"),
+        base_url="https://api.z.ai/api/paas/v4/",
+        temperature=temperature,
+    )
 
 
 # Page configuration
@@ -420,19 +412,12 @@ if st.session_state.qa_chain is None:
             st.session_state.vectorstore = vectorstore
 
         with st.spinner("🤖 Loading AI model..."):
-            if os.getenv("USE_GEMINI", "false").lower() == "true":
-                llm = ChatGoogleGenerativeAI(
-                    model="gemini-2.0-flash",
-                    google_api_key=os.getenv("GOOGLE_API_KEY"),
-                    temperature=0.7,
-                )
-            else:
-                llm = ChatOpenAI(
-                    model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
-                    api_key=zai_api_key,
-                    base_url="https://api.z.ai/api/paas/v4/",
-                    temperature=0.7,
-                )
+            llm = ChatOpenAI(
+                model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
+                api_key=zai_api_key,
+                base_url="https://api.z.ai/api/paas/v4/",
+                temperature=0.7,
+            )
 
             st.session_state.qa_chain = RetrievalQA.from_chain_type(
                 llm=llm, retriever=retriever

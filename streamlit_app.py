@@ -2,7 +2,6 @@ import os
 import requests
 import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Page configuration
 st.set_page_config(
@@ -41,31 +40,20 @@ def get_document_content():
         return None
 
 def initialize_llm():
-    """Initialize the LLM based on configuration."""
-    if os.getenv("USE_GEMINI", "false").lower() == "true":
-        google_api_key = os.getenv("GOOGLE_API_KEY")
-        if not google_api_key:
-            st.error("GOOGLE_API_KEY environment variable not set")
-            return None
-        return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
-            google_api_key=google_api_key,
-            streaming=True
-        )
-    else:
-        api_key = os.getenv('ZAI_API_KEY')
-        model_name = os.getenv('MODEL_NAME', 'glm-4.7-flash')
+    """Initialize the LLM (Z.AI)."""
+    api_key = os.getenv('ZAI_API_KEY')
+    model_name = os.getenv('MODEL_NAME', 'glm-4.7-flash')
 
-        if not api_key:
-            st.error("ZAI_API_KEY environment variable not set")
-            return None
+    if not api_key:
+        st.error("ZAI_API_KEY environment variable not set")
+        return None
 
-        return ChatOpenAI(
-            model=model_name,
-            api_key=api_key,
-            base_url="https://api.z.ai/api/paas/v4/",
-            streaming=True
-        )
+    return ChatOpenAI(
+        model=model_name,
+        api_key=api_key,
+        base_url="https://api.z.ai/api/paas/v4/",
+        streaming=True
+    )
 
 def generate_response(message, llm, resume_text):
     """Generate AI response with streaming."""
