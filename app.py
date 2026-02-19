@@ -17,7 +17,7 @@ import markdown
 def get_llm(temperature=0.1):
     if os.getenv("USE_GEMINI", "false").lower() == "true":
         return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini-2.0-flash",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=temperature,
         )
@@ -422,7 +422,7 @@ if st.session_state.qa_chain is None:
         with st.spinner("🤖 Loading AI model..."):
             if os.getenv("USE_GEMINI", "false").lower() == "true":
                 llm = ChatGoogleGenerativeAI(
-                    model="gemini-2.0-flash-exp",
+                    model="gemini-2.0-flash",
                     google_api_key=os.getenv("GOOGLE_API_KEY"),
                     temperature=0.7,
                 )

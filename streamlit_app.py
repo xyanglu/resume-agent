@@ -48,7 +48,7 @@ def initialize_llm():
             st.error("GOOGLE_API_KEY environment variable not set")
             return None
         return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini-2.0-flash",
             google_api_key=google_api_key,
             streaming=True
         )
