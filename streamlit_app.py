@@ -386,20 +386,49 @@ if st.session_state.qa_chain is None:
         # Check required secrets
         doc_url = os.getenv("RESUME_URL")
         service_account_json = os.getenv("service_account_json")
+        service_account_path = os.getenv("service_account_path")
         zai_api_key = os.getenv("ZAI_API_KEY")
 
-        if not all([doc_url, service_account_json, zai_api_key]):
+        # Use service_account_path if available, otherwise fall back to service_account_json
+        if service_account_path:
+            creds_path = service_account_path
+        elif service_account_json:
+            # Clean up multi-line JSON string
+            import json
+            # Remove triple quotes and clean up JSON string
+            cleaned_json = service_account_json.strip()
+            if cleaned_json.startswith('"""'):
+                cleaned_json = cleaned_json[3:]
+            if cleaned_json.endswith('"""'):
+                cleaned_json = cleaned_json[:-3]
+            cleaned_json = cleaned_json.strip()
+            
+            # Parse and re-dump to ensure valid JSON
+            try:
+                json_data = json.loads(cleaned_json)
+                cleaned_json = json.dumps(json_data, indent=2)
+            except json.JSONDecodeError as e:
+                st.error(f"❌ Invalid JSON in service_account_json: {str(e)}")
+                st.stop()
+            
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".json", delete=False, encoding='utf-8'
+            ) as f:
+                f.write(cleaned_json)
+                creds_path = f.name
+        else:
             st.error(
-                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json, ZAI_API_KEY"
+                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json (or service_account_path), ZAI_API_KEY"
+            )
+            st.stop()
+
+        if not all([doc_url, zai_api_key]):
+            st.error(
+                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json (or service_account_path), ZAI_API_KEY"
             )
             st.stop()
 
         with st.spinner("📄 Loading your resume from Google Docs..."):
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", delete=False
-            ) as f:
-                f.write(service_account_json)
-                creds_path = f.name
 
             creds = service_account.Credentials.from_service_account_file(
                 creds_path,
