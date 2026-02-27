@@ -11,6 +11,13 @@ import os
 import tempfile
 import markdown
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, try system env vars
+
 # Try to import weasyprint, make PDF generation optional
 try:
     from weasyprint import HTML
