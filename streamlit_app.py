@@ -421,6 +421,10 @@ if st.session_state.qa_chain is None:
                 cleaned_json = cleaned_json[:-3]
             cleaned_json = cleaned_json.strip()
             
+            # Handle escaped newlines in private_key (common when pasting from JSON files)
+            # Replace \n with actual newlines in the string
+            cleaned_json = cleaned_json.replace('\\n', '\n')
+            
             # Parse and re-dump to ensure valid JSON
             try:
                 json_data = json.loads(cleaned_json)
