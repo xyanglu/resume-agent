@@ -124,23 +124,43 @@ def main():
         st.divider()
         st.markdown(f"**Model:** {get_secret('MODEL_NAME', 'glm-4.7-flash')}")
 
-        # --- Initialization Block ---
+            # --- Initialization Block ---
     if st.session_state.qa_chain is None:
         try:
-            # ... (previous code for loading docs) ...
+            # 1. Get Secrets
+            doc_url = get_secret("RESUME_URL")
+            zai_api_key = get_secret("ZAI_API_KEY")
+            
+            if not all([doc_url, zai_api_key]):
+                st.error("❌ Missing secrets: RESUME_URL or ZAI_API_KEY")
+                st.stop()
 
+            # 2. Load and Split Documents
+            with st.spinner("🔄 Loading Resume from Google Docs..."):
+                # Fetch the text
+                resume_text = get_google_docs_content(doc_url)
+                
+                # Create Document object
+                documents = [Document(page_content=resume_text)]
+
+                # Split text into chunks
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+                chunks = text_splitter.split_documents(documents)
+
+            # 3. Create Vector Store
             with st.spinner("🔢 Creating Vector Store..."):
                 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
                 vectorstore = Chroma.from_documents(chunks, embedding=embeddings)
-                st.session_state.vectorstore = vectorstore # Save for PDF generation
+                st.session_state.vectorstore = vectorstore
                 
-                # ⚠️ MISSING LINE: Define the retriever
+                # Define the retriever
                 retriever = vectorstore.as_retriever()
-                
+            
+            # 4. Initialize AI Chain
             with st.spinner("🤖 Initializing AI..."):
                 llm = get_llm()
 
-                # 1. Define the prompt
+                # Define the prompt
                 prompt = ChatPromptTemplate.from_template(
                     """Answer the question based only on the following context:
                     
@@ -149,12 +169,11 @@ def main():
 Question: {input}"""
                 )
 
-                # 2. Helper function to format documents
+                # Helper function to format documents
                 def format_docs(docs):
                     return "\n\n".join(doc.page_content for doc in docs)
 
-                # 3. Build the chain manually (LCEL)
-                # This replaces create_retrieval_chain and create_stuff_documents_chain
+                # Build the chain manually (LCEL)
                 rag_chain = (
                     {"context": retriever | format_docs, "input": RunnablePassthrough()}
                     | prompt
