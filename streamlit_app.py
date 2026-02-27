@@ -9,10 +9,10 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
+
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # Load environment variables
 try:
@@ -123,35 +123,23 @@ def main():
         st.divider()
         st.markdown(f"**Model:** {get_secret('MODEL_NAME', 'glm-4.7-flash')}")
 
-    # --- Initialization Block ---
+        # --- Initialization Block ---
     if st.session_state.qa_chain is None:
         try:
-            doc_url = get_secret("RESUME_URL")
-            zai_api_key = get_secret("ZAI_API_KEY")
-            
-            # Validate essential secrets
-            if not all([doc_url, zai_api_key]):
-                st.error("❌ Missing secrets: RESUME_URL or ZAI_API_KEY")
-                st.stop()
-
-            with st.spinner("🔄 Loading Resume from Google Docs..."):
-                # Fetch Text
-                resume_text = get_google_docs_content(doc_url)
-                documents = [Document(page_content=resume_text)]
-
-                # Split Text
-                text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-                chunks = text_splitter.split_documents(documents)
+            # ... (previous code for loading docs) ...
 
             with st.spinner("🔢 Creating Vector Store..."):
                 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
                 vectorstore = Chroma.from_documents(chunks, embedding=embeddings)
                 st.session_state.vectorstore = vectorstore # Save for PDF generation
                 
+                # ⚠️ MISSING LINE: Define the retriever
+                retriever = vectorstore.as_retriever()
+                
             with st.spinner("🤖 Initializing AI..."):
                 llm = get_llm()
 
-                # NEW CODE (Modern LCEL approach)
+                # Modern LCEL approach
                 system_prompt = (
                     "You are an assistant for question-answering tasks. "
                     "Use the following pieces of retrieved context to answer the question. "
@@ -168,6 +156,7 @@ def main():
                 )
 
                 question_answer_chain = create_stuff_documents_chain(llm, prompt)
+                # Now 'retriever' is defined and this will work
                 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
                 st.session_state.qa_chain = rag_chain
@@ -190,15 +179,16 @@ def main():
         with st.chat_message("user"):
             st.markdown(prompt)
         
-        with st.chat_message("assistant"):
+         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 response = st.session_state.qa_chain.invoke({"input": prompt})
-                # We need to extract just the 'answer' part for the chat display
+                # Extract the answer string from the dictionary
                 response_text = response['answer']
 
             st.markdown(response_text)
             
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # ⚠️ FIX: Save 'response_text', not 'response'
+        st.session_state.messages.append({"role": "assistant", "content": response_text})
 
 if __name__ == "__main__":
     main()
