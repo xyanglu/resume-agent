@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 # FIX: Use standard langchain.chains instead of langchain_classic
-from langchain.chains import RetrievalQA 
+from langchain.chains.retrieval_qa.base import RetrievalQA
 
 # Load environment variables
 try:
