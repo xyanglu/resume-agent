@@ -204,9 +204,6 @@ Question: {input}"""
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 response = st.session_state.qa_chain.invoke(prompt)
-                # Extract the answer string from the dictionary
-                response_text = response['answer']
-
             st.markdown(response_text)
             
         # ⚠️ FIX: Save 'response_text', not 'response'
