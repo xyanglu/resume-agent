@@ -9,8 +9,10 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-# FIX: Use standard langchain.chains instead of langchain_classic
-from langchain_community.chains import RetrievalQA
+
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate
 
 # Load environment variables
 try:
@@ -148,10 +150,27 @@ def main():
                 
             with st.spinner("🤖 Initializing AI..."):
                 llm = get_llm()
-                st.session_state.qa_chain = RetrievalQA.from_chain_type(
-                    llm=llm, 
-                    retriever=vectorstore.as_retriever()
+
+                # NEW CODE (Modern LCEL approach)
+                system_prompt = (
+                    "You are an assistant for question-answering tasks. "
+                    "Use the following pieces of retrieved context to answer the question. "
+                    "If you don't know the answer, say that you don't know."
+                    "\n\n"
+                    "{context}"
                 )
+
+                prompt = ChatPromptTemplate.from_messages(
+                    [
+                        ("system", system_prompt),
+                        ("human", "{input}"),
+                    ]
+                )
+
+                question_answer_chain = create_stuff_documents_chain(llm, prompt)
+                rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+
+                st.session_state.qa_chain = rag_chain
 
             st.success("✅ Ready! Ask me about the resume.")
 
@@ -173,8 +192,11 @@ def main():
         
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response = st.session_state.qa_chain.run(prompt)
-            st.markdown(response)
+                response = st.session_state.qa_chain.invoke({"input": prompt})
+                # We need to extract just the 'answer' part for the chat display
+                response_text = response['answer']
+
+            st.markdown(response_text)
             
         st.session_state.messages.append({"role": "assistant", "content": response})
 
