@@ -11,8 +11,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+# --- NEW IMPORTS ---
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 # Load environment variables
 try:
@@ -139,25 +140,27 @@ def main():
             with st.spinner("🤖 Initializing AI..."):
                 llm = get_llm()
 
-                # Modern LCEL approach
-                system_prompt = (
-                    "You are an assistant for question-answering tasks. "
-                    "Use the following pieces of retrieved context to answer the question. "
-                    "If you don't know the answer, say that you don't know."
-                    "\n\n"
-                    "{context}"
+                # 1. Define the prompt
+                prompt = ChatPromptTemplate.from_template(
+                    """Answer the question based only on the following context:
+                    
+{context}
+
+Question: {input}"""
                 )
 
-                prompt = ChatPromptTemplate.from_messages(
-                    [
-                        ("system", system_prompt),
-                        ("human", "{input}"),
-                    ]
-                )
+                # 2. Helper function to format documents
+                def format_docs(docs):
+                    return "\n\n".join(doc.page_content for doc in docs)
 
-                question_answer_chain = create_stuff_documents_chain(llm, prompt)
-                # Now 'retriever' is defined and this will work
-                rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+                # 3. Build the chain manually (LCEL)
+                # This replaces create_retrieval_chain and create_stuff_documents_chain
+                rag_chain = (
+                    {"context": retriever | format_docs, "input": RunnablePassthrough()}
+                    | prompt
+                    | llm
+                    | StrOutputParser()
+                )
 
                 st.session_state.qa_chain = rag_chain
 
@@ -181,7 +184,7 @@ def main():
         
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response = st.session_state.qa_chain.invoke({"input": prompt})
+                response = st.session_state.qa_chain.invoke(prompt})
                 # Extract the answer string from the dictionary
                 response_text = response['answer']
 
