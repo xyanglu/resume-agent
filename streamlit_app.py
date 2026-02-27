@@ -201,13 +201,32 @@ Question: {input}"""
         with st.chat_message("user"):
             st.markdown(prompt)
         
+        # 1. Initialize response_text with a default value immediately
+        response_text = "⚠️ An error occurred, and no response was generated."
+
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response = st.session_state.qa_chain.invoke(prompt)
+                try:
+                    # 2. Attempt to get response
+                    if st.session_state.qa_chain is None:
+                        raise ValueError("The AI Chain is not initialized. Please reload the page.")
+                    
+                    result = st.session_state.qa_chain.invoke(prompt)
+                    
+                    # 3. Check if result is valid
+                    if result:
+                        response_text = result
+                    else:
+                        response_text = "The model returned an empty response. (Check API Key or Model Name)"
+
+                except Exception as e:
+                    # 4. If anything fails, catch it and put it in the response
+                    response_text = f"❌ **Error:** {e}"
+            
+            # 5. Safely display response_text (it is now guaranteed to exist)
             st.markdown(response_text)
             
-        # ⚠️ FIX: Save 'response_text', not 'response'
+        # 6. Save to history
         st.session_state.messages.append({"role": "assistant", "content": response_text})
-
 if __name__ == "__main__":
     main()
