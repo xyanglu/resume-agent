@@ -17,7 +17,7 @@ def get_llm(temperature=0.1):
     return ChatOpenAI(
         model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
         api_key=os.getenv("ZAI_API_KEY"),
-        base_url="https://api.z.ai/api/paas/v4/",
+        base_url="https://api.z.ai/api/coding/paas/v4",
         temperature=temperature,
     )
 
