@@ -179,7 +179,7 @@ def main():
         with st.chat_message("user"):
             st.markdown(prompt)
         
-         with st.chat_message("assistant"):
+        with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 response = st.session_state.qa_chain.invoke({"input": prompt})
                 # Extract the answer string from the dictionary
