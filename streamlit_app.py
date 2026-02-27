@@ -391,7 +391,18 @@ if st.session_state.qa_chain is None:
 
         # Use service_account_path if available, otherwise fall back to service_account_json
         if service_account_path:
-            creds_path = service_account_path
+            # Check if file exists
+            if not os.path.exists(service_account_path):
+                # Try relative path from current directory
+                if os.path.exists(os.path.join(os.path.dirname(__file__), service_account_path)):
+                    creds_path = os.path.join(os.path.dirname(__file__), service_account_path)
+                else:
+                    st.error(f"❌ Service account file not found: {service_account_path}")
+                    st.info(f"💡 Current working directory: {os.getcwd()}")
+                    st.info(f"💡 Looking for file at: {os.path.abspath(service_account_path)}")
+                    st.stop()
+            else:
+                creds_path = service_account_path
         elif service_account_json:
             # Clean up multi-line JSON string
             import json
