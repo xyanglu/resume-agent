@@ -9,8 +9,14 @@ from googleapiclient.discovery import build
 from langchain_classic.chains import RetrievalQA
 import os
 import tempfile
-from weasyprint import HTML
 import markdown
+
+# Try to import weasyprint, make PDF generation optional
+try:
+    from weasyprint import HTML
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError):
+    WEASYPRINT_AVAILABLE = False
 
 
 def get_llm(temperature=0.1):
@@ -48,6 +54,9 @@ def extract_dates(resume_context):
 
 def generate_resume_pdf(job_description, company_name):
     """Generate a tailored resume PDF based on job description."""
+    if not WEASYPRINT_AVAILABLE:
+        return None
+
     # Get resume content from RAG
     docs = st.session_state.vectorstore.similarity_search(
         "education skills experience work history qualifications",
@@ -139,6 +148,9 @@ def generate_resume_pdf(job_description, company_name):
 
 def generate_cover_letter_pdf(job_description, company_name):
     """Generate a cover letter PDF based on job description."""
+    if not WEASYPRINT_AVAILABLE:
+        return None
+
     # Get resume content from RAG
     docs = st.session_state.vectorstore.similarity_search(
         "entire resume summary and all experience", k=10
@@ -266,52 +278,55 @@ def markdown_to_html(markdown_content, doc_type):
 
 # Sidebar - PDF Generation
 with st.sidebar:
-    st.header("📋 PDF Generation")
+    if WEASYPRINT_AVAILABLE:
+        st.header("📋 PDF Generation")
 
-    with st.expander("Generate Custom Resume & Cover Letter", expanded=False):
-        st.write("Paste a job description to get a tailored resume and cover letter.")
+        with st.expander("Generate Custom Resume & Cover Letter", expanded=False):
+            st.write("Paste a job description to get a tailored resume and cover letter.")
 
-        company_name = st.text_input(
-            "Company Name (optional)", placeholder="e.g., Google, Microsoft, Amazon"
-        )
-
-        job_description = st.text_area(
-            "Job Description", height=200, placeholder="Paste job description here..."
-        )
-
-        if st.button("Generate PDF Documents", type="primary"):
-            if job_description:
-                with st.spinner("📄 Generating your customized documents..."):
-                    # Generate PDFs with company name
-                    resume_pdf = generate_resume_pdf(job_description, company_name)
-                    cover_letter_pdf = generate_cover_letter_pdf(
-                        job_description, company_name
-                    )
-
-                    # Save to session state
-                    st.session_state.resume_pdf = resume_pdf
-                    st.session_state.cover_letter_pdf = cover_letter_pdf
-                    st.session_state.company_name = company_name
-                    st.success("✅ PDFs generated successfully!")
-
-        # Show download buttons if PDFs exist
-        if "resume_pdf" in st.session_state:
-            st.divider()
-            st.write("📥 Download your documents:")
-            st.download_button(
-                label="📄 Download Resume",
-                data=st.session_state.resume_pdf,
-                file_name=f"{st.session_state.company_name or 'custom'}_resume.pdf",
-                mime="application/pdf",
-                use_container_width=True,
+            company_name = st.text_input(
+                "Company Name (optional)", placeholder="e.g., Google, Microsoft, Amazon"
             )
-            st.download_button(
-                label="✉️ Download Cover Letter",
-                data=st.session_state.cover_letter_pdf,
-                file_name=f"{st.session_state.company_name or 'custom'}_cover_letter.pdf",
-                mime="application/pdf",
-                use_container_width=True,
+
+            job_description = st.text_area(
+                "Job Description", height=200, placeholder="Paste job description here..."
             )
+
+            if st.button("Generate PDF Documents", type="primary"):
+                if job_description:
+                    with st.spinner("📄 Generating your customized documents..."):
+                        # Generate PDFs with company name
+                        resume_pdf = generate_resume_pdf(job_description, company_name)
+                        cover_letter_pdf = generate_cover_letter_pdf(
+                            job_description, company_name
+                        )
+
+                        # Save to session state
+                        st.session_state.resume_pdf = resume_pdf
+                        st.session_state.cover_letter_pdf = cover_letter_pdf
+                        st.session_state.company_name = company_name
+                        st.success("✅ PDFs generated successfully!")
+
+            # Show download buttons if PDFs exist
+            if "resume_pdf" in st.session_state:
+                st.divider()
+                st.write("📥 Download your documents:")
+                st.download_button(
+                    label="📄 Download Resume",
+                    data=st.session_state.resume_pdf,
+                    file_name=f"{st.session_state.company_name or 'custom'}_resume.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+                st.download_button(
+                    label="✉️ Download Cover Letter",
+                    data=st.session_state.cover_letter_pdf,
+                    file_name=f"{st.session_state.company_name or 'custom'}_cover_letter.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+    else:
+        st.warning("⚠️ PDF generation unavailable - WeasyPrint library not installed or missing system dependencies. The chat functionality will still work.")
 
     st.divider()
     model = os.getenv("MODEL_NAME", "glm-4.7-flash")
