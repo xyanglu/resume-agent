@@ -12,6 +12,57 @@ pinned: false
 
 An AI-powered chatbot that answers questions about a candidate using their resume from Google Docs. This Space demonstrates dynamic document integration and conversational AI deployment.
 
+## Changelog
+
+### [2026-02-27] - Latest Updates
+
+### [2026-02-26]
+#### Changed
+- Fixed formatting issues where output was not following prompt instructions properly
+- Enhanced prompt engineering to ensure better adherence to formatting requirements
+
+### [2026-02-25]
+#### Added
+- Changed output format from Markdown to PDF for better document sharing and professional presentation
+- Implemented PDF generation with proper formatting for resumes and cover letters
+
+### [2026-02-24]
+#### Added
+- Feature to generate custom resumes and cover letters based on user requirements
+- Dynamic content generation tailored to specific job descriptions and user preferences
+
+### [2026-02-23]
+#### Changed
+- Implemented redundancy using multiple LLM models (Z.AI GLM and Google Gemini)
+- Added ability to switch between models for reliability and cost optimization
+- Integrated free tier Google Gemini 3 Flash for backup and testing
+
+### [2026-02-22]
+#### Changed
+- Migrated from basic prompt-based system to RAG (Retrieval-Augmented Generation)
+- Improved accuracy and context awareness using LangChain QA chains
+- Enhanced document retrieval and answer generation pipeline
+
+### [2026-02-21]
+#### Added
+- Implemented Google Docs scraping to dynamically fetch resume content
+- Integrated resume content into the prompt for context-aware responses
+- Added 5-minute caching to reduce API calls and improve performance
+
+### [2026-02-20]
+#### Added
+- Multi-platform UI support with both Gradio and Streamlit interfaces
+- Hosted on Hugging Face Spaces for easy access
+- Dual web UI options for different user preferences
+
+### [2026-02-19]
+#### Added
+- Initial chatbot implementation with basic Q&A functionality
+- Candidate-focused conversation system
+- Safety filters to decline non-candidate questions
+
+---
+
 ## Features
 
 - **Dynamic Resume Integration**: Fetches the latest resume content from Google Docs automatically
@@ -104,57 +155,6 @@ For more details on setup and deployment, see the [project repository](https://g
 - Resume data comes from a public Google Doc
 - No personal data stored beyond the sessionv
 - API keys are managed securely through environment variables
-
----
-
-## Changelog
-
-### [2026-02-27] - Latest Updates
-
-### [2026-02-26]
-#### Changed
-- Fixed formatting issues where output was not following prompt instructions properly
-- Enhanced prompt engineering to ensure better adherence to formatting requirements
-
-### [2026-02-25]
-#### Added
-- Changed output format from Markdown to PDF for better document sharing and professional presentation
-- Implemented PDF generation with proper formatting for resumes and cover letters
-
-### [2026-02-24]
-#### Added
-- Feature to generate custom resumes and cover letters based on user requirements
-- Dynamic content generation tailored to specific job descriptions and user preferences
-
-### [2026-02-23]
-#### Changed
-- Implemented redundancy using multiple LLM models (Z.AI GLM and Google Gemini)
-- Added ability to switch between models for reliability and cost optimization
-- Integrated free tier Google Gemini 3 Flash for backup and testing
-
-### [2026-02-22]
-#### Changed
-- Migrated from basic prompt-based system to RAG (Retrieval-Augmented Generation)
-- Improved accuracy and context awareness using LangChain QA chains
-- Enhanced document retrieval and answer generation pipeline
-
-### [2026-02-21]
-#### Added
-- Implemented Google Docs scraping to dynamically fetch resume content
-- Integrated resume content into the prompt for context-aware responses
-- Added 5-minute caching to reduce API calls and improve performance
-
-### [2026-02-20]
-#### Added
-- Multi-platform UI support with both Gradio and Streamlit interfaces
-- Hosted on Hugging Face Spaces for easy access
-- Dual web UI options for different user preferences
-
-### [2026-02-19]
-#### Added
-- Initial chatbot implementation with basic Q&A functionality
-- Candidate-focused conversation system
-- Safety filters to decline non-candidate questions
 
 ---
 
