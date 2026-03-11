@@ -15,7 +15,7 @@ import markdown
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
-        model="meta-llama/llama-3.1-8b-instruct",
+        model="openrouter/free",
         api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")),
         base_url="https://openrouter.ai/api/v1",
         temperature=temperature,
@@ -320,7 +320,7 @@ with st.sidebar:
     This app uses:
     - 📄 Google Docs API
     - 🔢 Vector embeddings
-    - 🤖 OpenRouter (Llama 3.1)
+    - 🤖 OpenRouter (Free)
     """)
 
 # Main area - Title and description
@@ -415,7 +415,7 @@ if st.session_state.qa_chain is None:
 
         with st.spinner("🤖 Loading AI model..."):
             llm = ChatOpenAI(
-                model="meta-llama/llama-3.1-8b-instruct",
+                model="openrouter/free",
                 api_key=openrouter_api_key,
                 base_url="https://openrouter.ai/api/v1",
                 temperature=0.7,
