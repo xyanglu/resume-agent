@@ -4,9 +4,11 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from langchain_classic.chains import RetrievalQA
 import os
 import tempfile
 from weasyprint import HTML
@@ -421,8 +423,39 @@ if st.session_state.qa_chain is None:
                 temperature=0.7,
             )
 
-            st.session_state.qa_chain = RetrievalQA.from_chain_type(
-                llm=llm, retriever=retriever
+            prompt = ChatPromptTemplate.from_template(
+                """Answer the question based only on the following context and conversation history.
+
+Context from resume:
+{context}
+
+Conversation history:
+{history}
+
+Question: {input}"""
+            )
+
+            def format_docs(docs):
+                return "\n\n".join(doc.page_content for doc in docs)
+
+            def get_history():
+                messages = st.session_state.get("messages", [])
+                return "\n".join(
+                    f"User: {m['content']}"
+                    if m["role"] == "user"
+                    else f"Assistant: {m['content']}"
+                    for m in messages
+                )
+
+            st.session_state.qa_chain = (
+                {
+                    "context": retriever | format_docs,
+                    "history": lambda x: get_history(),
+                    "input": RunnablePassthrough(),
+                }
+                | prompt
+                | llm
+                | StrOutputParser()
             )
 
         st.success("✅ Resume loaded! You can now ask questions.")
@@ -450,7 +483,7 @@ if prompt := st.chat_input(
     # Generate and display assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = st.session_state.qa_chain.run(prompt)
+            response = st.session_state.qa_chain.invoke(prompt)
         st.markdown(response)
 
     st.session_state.messages.append({"role": "assistant", "content": response})

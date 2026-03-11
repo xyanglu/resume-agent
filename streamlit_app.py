@@ -178,9 +178,13 @@ def main():
 
                 # Define prompt
                 prompt = ChatPromptTemplate.from_template(
-                    """Answer the question based only on the following context:
+                    """Answer the question based only on the following context and conversation history.
 
+Context from resume:
 {context}
+
+Conversation history:
+{history}
 
 Question: {input}"""
                 )
@@ -189,9 +193,22 @@ Question: {input}"""
                 def format_docs(docs):
                     return "\n\n".join(doc.page_content for doc in docs)
 
+                def get_history():
+                    messages = st.session_state.get("messages", [])
+                    return "\n".join(
+                        f"User: {m['content']}"
+                        if m["role"] == "user"
+                        else f"Assistant: {m['content']}"
+                        for m in messages
+                    )
+
                 # Build chain manually (LCEL)
                 rag_chain = (
-                    {"context": retriever | format_docs, "input": RunnablePassthrough()}
+                    {
+                        "context": retriever | format_docs,
+                        "history": lambda x: get_history(),
+                        "input": RunnablePassthrough(),
+                    }
                     | prompt
                     | llm
                     | StrOutputParser()
