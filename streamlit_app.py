@@ -50,7 +50,7 @@ st.set_page_config(page_title="RAG Resume Chatbot", page_icon="📄", layout="wi
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
-        model="meta-llama/llama-3.1-8b-instruct",
+        model="openrouter/free",
         api_key=get_secret("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
         temperature=temperature,
@@ -134,7 +134,7 @@ def main():
             )
 
         st.divider()
-        st.markdown(f"**Model:** OpenRouter (Llama 3.1)")
+        st.markdown(f"**Model:** OpenRouter (Free)")
 
     # --- Initialization Block ---
     if st.session_state.qa_chain is None:
