@@ -435,7 +435,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("Ask a question about the resume..."):
+if prompt := st.chat_input("Copy and paste a job description or Ask a question about the resume!"):
     # Add user message to history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
