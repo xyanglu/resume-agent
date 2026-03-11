@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from google.oauth2 import service_account
@@ -14,9 +14,10 @@ import markdown
 
 
 def get_llm(temperature=0.1):
-    return HuggingFaceEndpoint(
-        repo_id="meta-llama/Llama-3.1-8B-Instruct",
-        huggingfacehub_api_token=st.secrets.get("HF_TOKEN", os.getenv("HF_TOKEN")),
+    return ChatOpenAI(
+        model="meta-llama/llama-3.1-8b-instruct",
+        api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")),
+        base_url="https://openrouter.ai/api/v1",
         temperature=temperature,
     )
 
@@ -319,14 +320,14 @@ with st.sidebar:
     This app uses:
     - 📄 Google Docs API
     - 🔢 Vector embeddings
-    - 🤖 HuggingFace (Llama 3.1)
+    - 🤖 OpenRouter (Llama 3.1)
     """)
 
 # Main area - Title and description
 st.title("📄 RAG Resume Chatbot")
 st.markdown(f"""
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
-It loads your resume from Google Docs, creates embeddings, and uses HuggingFace (Llama 3.1).
+It loads your resume from Google Docs, creates embeddings, and uses OpenRouter (Llama 3.1).
 
 👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
 """)
@@ -370,11 +371,13 @@ if st.session_state.qa_chain is None:
         service_account_json = st.secrets.get(
             "service_account_json", os.getenv("service_account_json")
         )
-        hf_token = st.secrets.get("HF_TOKEN", os.getenv("HF_TOKEN"))
+        openrouter_api_key = st.secrets.get(
+            "OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")
+        )
 
-        if not all([doc_url, service_account_json, hf_token]):
+        if not all([doc_url, service_account_json, openrouter_api_key]):
             st.error(
-                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json, HF_TOKEN"
+                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json, OPENROUTER_API_KEY"
             )
             st.stop()
 
@@ -411,9 +414,10 @@ if st.session_state.qa_chain is None:
             st.session_state.vectorstore = vectorstore
 
         with st.spinner("🤖 Loading AI model..."):
-            llm = HuggingFaceEndpoint(
-                repo_id="meta-llama/Llama-3.1-8B-Instruct",
-                huggingfacehub_api_token=hf_token,
+            llm = ChatOpenAI(
+                model="meta-llama/llama-3.1-8b-instruct",
+                api_key=openrouter_api_key,
+                base_url="https://openrouter.ai/api/v1",
                 temperature=0.7,
             )
 
@@ -455,9 +459,9 @@ if prompt := st.chat_input(
 st.divider()
 st.markdown(f"""
 ---
-**Made with ❤️ using Streamlit, LangChain, and HuggingFace**
+**Made with ❤️ using Streamlit, LangChain, and OpenRouter**
 
 - 📄 Resume loaded from Google Docs
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
-- 🤖 AI Model: HuggingFace (Llama 3.1)
+- 🤖 AI Model: OpenRouter (Llama 3.1)
 """)
