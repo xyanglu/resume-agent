@@ -15,6 +15,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
+from langchain_openai import ChatOpenAI
+
 # Load environment variables
 try:
     from dotenv import load_dotenv
@@ -48,9 +50,9 @@ st.set_page_config(page_title="RAG Resume Chatbot", page_icon="📄", layout="wi
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
-        model=get_secret("MODEL_NAME", "glm-4.7-flash"),
-        api_key=get_secret("ZAI_API_KEY"),
-        base_url="https://api.z.ai/api/coding/paas/v4",
+        model="openai/gpt-4o-mini",
+        api_key=get_secret("OPENROUTER_API_KEY"),
+        base_url="https://openrouter.ai/api/v1",
         temperature=temperature,
     )
 
@@ -132,17 +134,17 @@ def main():
             )
 
         st.divider()
-        st.markdown(f"**Model:** {get_secret('MODEL_NAME', 'glm-4.7-flash')}")
+        st.markdown(f"**Model:** OpenRouter (GPT-4o Mini)")
 
     # --- Initialization Block ---
     if st.session_state.qa_chain is None:
         try:
             # 1. Get Secrets
             doc_url = get_secret("RESUME_URL")
-            zai_api_key = get_secret("ZAI_API_KEY")
+            openrouter_api_key = get_secret("OPENROUTER_API_KEY")
 
-            if not all([doc_url, zai_api_key]):
-                st.error("❌ Missing secrets: RESUME_URL or ZAI_API_KEY")
+            if not all([doc_url, openrouter_api_key]):
+                st.error("❌ Missing secrets: RESUME_URL or OPENROUTER_API_KEY")
                 st.stop()
 
             # 2. Load and Split Documents
