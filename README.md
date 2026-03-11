@@ -14,42 +14,58 @@ An AI-powered chatbot that answers questions about a candidate using their resum
 
 ## Changelog
 
-### [2026-02-27] - Latest Updates
+### [2026-03-11] - Latest Updates
 
-### [2026-02-26]
+### [2026-03-11]
+#### Added
+- Added Streamlit app with full RAG chatbot functionality
+- Configured local deployment setup with .streamlit/secrets.toml
+- Added chat history as context for improved conversation continuity
+- Fixed messages initialization in get_history function
+
+### [2026-03-09]
+#### Fixed
+- Fixed package name for Debian compatibility
+
+### [2026-03-03]
+#### Changed
+- Moved changelog to top of README for better visibility
+- Added GitHub-style changelog to README.md
+
+### [2026-02-27]
 #### Changed
 - Fixed formatting issues where output was not following prompt instructions properly
 - Enhanced prompt engineering to ensure better adherence to formatting requirements
 
-### [2026-02-25]
+### [2026-02-26]
 #### Added
 - Changed output format from Markdown to PDF for better document sharing and professional presentation
 - Implemented PDF generation with proper formatting for resumes and cover letters
 
-### [2026-02-24]
+### [2026-02-25]
 #### Added
 - Feature to generate custom resumes and cover letters based on user requirements
 - Dynamic content generation tailored to specific job descriptions and user preferences
 
-### [2026-02-23]
+### [2026-02-24]
 #### Changed
 - Implemented redundancy using multiple LLM models (Z.AI GLM and Google Gemini)
 - Added ability to switch between models for reliability and cost optimization
 - Integrated free tier Google Gemini 3 Flash for backup and testing
 
-### [2026-02-22]
+### [2026-02-23]
 #### Changed
 - Migrated from basic prompt-based system to RAG (Retrieval-Augmented Generation)
 - Improved accuracy and context awareness using LangChain QA chains
 - Enhanced document retrieval and answer generation pipeline
 
-### [2026-02-21]
+### [2026-02-22]
 #### Added
 - Implemented Google Docs scraping to dynamically fetch resume content
 - Integrated resume content into the prompt for context-aware responses
 - Added 5-minute caching to reduce API calls and improve performance
 
-### [2026-02-20]
+### [2026-02-21]
 #### Added
 - Multi-platform UI support with both Gradio and Streamlit interfaces
 - Hosted on Hugging Face Spaces for easy access
@@ -153,7 +169,7 @@ For more details on setup and deployment, see the [project repository](https://g
 
 - Only candidate-related questions are answered
 - Resume data comes from a public Google Doc
-- No personal data stored beyond the sessionv
+- No personal data stored beyond the session
 - API keys are managed securely through environment variables
 
 ---
