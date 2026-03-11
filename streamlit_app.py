@@ -50,7 +50,7 @@ st.set_page_config(page_title="RAG Resume Chatbot", page_icon="📄", layout="wi
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
-        model="meta-llama/llama-3.1-8b-instruct",
+        model="openrouter/free",
         api_key=get_secret("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
         temperature=temperature,
@@ -134,7 +134,7 @@ def main():
             )
 
         st.divider()
-        st.markdown(f"**Model:** OpenRouter (Llama 3.1)")
+        st.markdown(f"**Model:** OpenRouter (Free)")
 
     # --- Initialization Block ---
     if st.session_state.qa_chain is None:
@@ -178,13 +178,9 @@ def main():
 
                 # Define prompt
                 prompt = ChatPromptTemplate.from_template(
-                    """Answer the question based only on the following context and conversation history.
+                    """Answer the question based only on the following context:
 
-Context from resume:
 {context}
-
-Conversation history:
-{history}
 
 Question: {input}"""
                 )
@@ -193,22 +189,9 @@ Question: {input}"""
                 def format_docs(docs):
                     return "\n\n".join(doc.page_content for doc in docs)
 
-                def get_history():
-                    messages = st.session_state.get("messages", [])
-                    return "\n".join(
-                        f"User: {m['content']}"
-                        if m["role"] == "user"
-                        else f"Assistant: {m['content']}"
-                        for m in messages
-                    )
-
                 # Build chain manually (LCEL)
                 rag_chain = (
-                    {
-                        "context": retriever | format_docs,
-                        "history": lambda x: get_history(),
-                        "input": RunnablePassthrough(),
-                    }
+                    {"context": retriever | format_docs, "input": RunnablePassthrough()}
                     | prompt
                     | llm
                     | StrOutputParser()
