@@ -192,11 +192,12 @@ Question: {input}"""
                     return "\n\n".join(doc.page_content for doc in docs)
 
                 def get_history():
+                    messages = st.session_state.get("messages", [])
                     return "\n".join(
                         f"User: {m['content']}"
                         if m["role"] == "user"
                         else f"Assistant: {m['content']}"
-                        for m in st.session_state.messages
+                        for m in messages
                     )
 
                 # Build chain manually (LCEL)
