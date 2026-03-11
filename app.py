@@ -15,9 +15,9 @@ import markdown
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
-        model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
-        api_key=os.getenv("ZAI_API_KEY"),
-        base_url="https://api.z.ai/api/coding/paas/v4",
+        model="meta-llama/llama-3.1-8b-instruct",
+        api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")),
+        base_url="https://openrouter.ai/api/v1",
         temperature=temperature,
     )
 
@@ -314,22 +314,20 @@ with st.sidebar:
             )
 
     st.divider()
-    model = os.getenv("MODEL_NAME", "glm-4.7-flash")
     st.markdown(f"""
     **ℹ️ About**
 
     This app uses:
     - 📄 Google Docs API
     - 🔢 Vector embeddings
-    - 🤖 Z.AI {model}
+    - 🤖 OpenRouter (Llama 3.1)
     """)
 
 # Main area - Title and description
 st.title("📄 RAG Resume Chatbot")
-model = os.getenv("MODEL_NAME", "glm-4.7-flash")
 st.markdown(f"""
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
-It loads your resume from Google Docs, creates embeddings, and uses Z.AI's {model}.
+It loads your resume from Google Docs, creates embeddings, and uses OpenRouter (Llama 3.1).
 
 👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
 """)
@@ -369,13 +367,17 @@ def extract_text_from_doc(doc):
 if st.session_state.qa_chain is None:
     try:
         # Check required secrets
-        doc_url = os.getenv("RESUME_URL")
-        service_account_json = os.getenv("service_account_json")
-        zai_api_key = os.getenv("ZAI_API_KEY")
+        doc_url = st.secrets.get("RESUME_URL", os.getenv("RESUME_URL"))
+        service_account_json = st.secrets.get(
+            "service_account_json", os.getenv("service_account_json")
+        )
+        openrouter_api_key = st.secrets.get(
+            "OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")
+        )
 
-        if not all([doc_url, service_account_json, zai_api_key]):
+        if not all([doc_url, service_account_json, openrouter_api_key]):
             st.error(
-                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json, ZAI_API_KEY"
+                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json, OPENROUTER_API_KEY"
             )
             st.stop()
 
@@ -413,9 +415,9 @@ if st.session_state.qa_chain is None:
 
         with st.spinner("🤖 Loading AI model..."):
             llm = ChatOpenAI(
-                model=os.getenv("MODEL_NAME", "glm-4.7-flash"),
-                api_key=zai_api_key,
-                base_url="https://api.z.ai/api/paas/v4/",
+                model="meta-llama/llama-3.1-8b-instruct",
+                api_key=openrouter_api_key,
+                base_url="https://openrouter.ai/api/v1",
                 temperature=0.7,
             )
 
@@ -435,7 +437,9 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("Copy and paste a job description or Ask a question about the resume!"):
+if prompt := st.chat_input(
+    "Copy and paste a job description or Ask a question about the resume!"
+):
     # Add user message to history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -453,12 +457,11 @@ if prompt := st.chat_input("Copy and paste a job description or Ask a question a
 
 # Footer
 st.divider()
-model = os.getenv("MODEL_NAME", "glm-4.7-flash")
 st.markdown(f"""
 ---
-**Made with ❤️ using Streamlit, LangChain, and Z.AI**
+**Made with ❤️ using Streamlit, LangChain, and OpenRouter**
 
 - 📄 Resume loaded from Google Docs
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
-- 🤖 AI Model: Z.AI ({model})
+- 🤖 AI Model: OpenRouter (Llama 3.1)
 """)
