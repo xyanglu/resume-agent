@@ -49,7 +49,7 @@ st.set_page_config(
 def review_pdf_with_vision(pdf_bytes, doc_type="resume"):
     """Convert PDF to image, send to OpenRouter vision model for layout review."""
     if not PYMUPDF_AVAILABLE:
-        return "❌ Vision review unavailable: PyMuPDF not installed."
+        return "⚠️ Vision review skipped: PyMuPDF not installed."
 
     # Convert all PDF pages to PNG images
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -75,7 +75,6 @@ Format your response as:
 **Rating: X/10**
 **Issues:**
 - [issue 1]
-- [issue 2]
 **Strengths:**
 - [strength 1]"""
     else:
@@ -91,7 +90,6 @@ Format your response as:
 **Rating: X/10**
 **Issues:**
 - [issue 1]
-- [issue 2]
 **Strengths:**
 - [strength 1]"""
 
@@ -108,31 +106,34 @@ Format your response as:
     api_key = st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY"))
     vision_model = st.secrets.get("VISION_MODEL", "nvidia/nemotron-nano-12b-v2-vl:free")
 
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": vision_model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": content_parts,
-                }
-            ],
-            "max_tokens": 1000,
-        },
-        timeout=60,
-    )
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": vision_model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": content_parts,
+                    }
+                ],
+                "max_tokens": 1000,
+            },
+            timeout=60,
+        )
 
-    result = response.json()
+        result = response.json()
 
-    if "error" in result:
-        return f"❌ Vision API error: {result['error'].get('message', result['error'])}"
+        if "error" in result:
+            return f"⚠️ Vision review error: {result['error'].get('message', result['error'])}"
 
-    return result["choices"][0]["message"]["content"]
+        return result["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"⚠️ Vision review failed: {e}"
 
 
 def extract_dates(resume_context):
@@ -140,9 +141,9 @@ def extract_dates(resume_context):
     import re
 
     date_patterns = [
-        r"\d{4}",  # Years like 2020
-        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\s*\d{4}",  # Jan 2020
-        r"(?:Present|Current)",  # Current positions
+        r"\d{4}",
+        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\s*\d{4}",
+        r"(?:Present|Current)",
     ]
     dates_found = []
     for pattern in date_patterns:
@@ -152,14 +153,12 @@ def extract_dates(resume_context):
 
 def generate_resume_pdf(job_description, company_name):
     """Generate a tailored resume PDF based on job description."""
-    # Get resume content from RAG
     docs = st.session_state.vectorstore.similarity_search(
         "education skills experience work history qualifications",
         k=15,
     )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
 
-    # Step 1: Extract name first
     name_prompt = f"""
     Extract ONLY candidate's full name from this resume context.
     Return ONLY name, nothing else.
@@ -175,7 +174,6 @@ def generate_resume_pdf(job_description, company_name):
         candidate_name = " ".join(candidate_name.split()[:2])
     candidate_name = candidate_name.replace("#", "").replace("*", "").strip()
 
-    # Step 2: Generate resume with extracted name
     prompt = f"""
     Create a professional 1-page resume for {company_name if company_name else "this company"}.
 
@@ -231,15 +229,12 @@ def generate_resume_pdf(job_description, company_name):
     response = llm.invoke(prompt)
     resume_markdown = response.content.strip()
 
-    # Ensure name is at the top
     if not resume_markdown.startswith("#"):
         resume_markdown = f"# {candidate_name}\n\n{resume_markdown}"
 
-    # Truncate if too long
     if len(resume_markdown) > 3000:
         resume_markdown = resume_markdown[:3000]
 
-    # Convert to HTML then PDF
     html_content = markdown_to_html(resume_markdown, "resume")
     pdf_bytes = HTML(string=html_content).write_pdf()
 
@@ -253,7 +248,6 @@ def generate_cover_letter_pdf(job_description, company_name):
     )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
 
-    # Extract candidate name
     name_prompt = f"""
     Extract ONLY candidate's full name from this resume context.
     Return ONLY name, nothing else.
@@ -403,6 +397,7 @@ with st.sidebar:
 
         if st.button("Generate PDF Documents", type="primary"):
             if job_description:
+                # Step 1: Generate PDFs
                 with st.spinner("📄 Generating your customized documents..."):
                     resume_pdf, resume_md = generate_resume_pdf(
                         job_description, company_name
@@ -415,11 +410,23 @@ with st.sidebar:
                     st.session_state.resume_md = resume_md
                     st.session_state.cover_letter_pdf = cover_letter_pdf
                     st.session_state.company_name = company_name
-                    st.session_state.resume_review = None
-                    st.session_state.cover_review = None
-                    st.success("✅ PDFs generated successfully!")
 
-        # Show download buttons if PDFs exist
+                # Step 2: Auto-run vision review on both
+                if PYMUPDF_AVAILABLE:
+                    with st.spinner("👁️ Running AI vision review on both documents..."):
+                        st.session_state.resume_review = review_pdf_with_vision(
+                            resume_pdf, "resume"
+                        )
+                        st.session_state.cover_review = review_pdf_with_vision(
+                            cover_letter_pdf, "cover_letter"
+                        )
+                else:
+                    st.session_state.resume_review = "⚠️ Vision review skipped (PyMuPDF not available)."
+                    st.session_state.cover_review = "⚠️ Vision review skipped (PyMuPDF not available)."
+
+                st.success("✅ Documents generated and reviewed!")
+
+        # Show download + reviews if PDFs exist
         if "resume_pdf" in st.session_state:
             st.divider()
             st.write("📥 Download your documents:")
@@ -438,46 +445,17 @@ with st.sidebar:
                 use_container_width=True,
             )
 
-            # Vision Review section
+            # Vision review results (auto-generated)
             st.divider()
             st.markdown("### 👁️ AI Vision Review")
-            st.caption("Uses AI vision to check layout, formatting, and readability.")
 
-            if PYMUPDF_AVAILABLE:
-                col1, col2 = st.columns(2)
+            if st.session_state.get("resume_review"):
+                with st.expander("📊 Resume Review", expanded=True):
+                    st.markdown(st.session_state.resume_review)
 
-                with col1:
-                    if st.button("🔍 Review Resume", use_container_width=True):
-                        with st.spinner("👁️ Analyzing resume layout..."):
-                            try:
-                                review = review_pdf_with_vision(
-                                    st.session_state.resume_pdf, "resume"
-                                )
-                                st.session_state.resume_review = review
-                            except Exception as e:
-                                st.error(f"Review failed: {e}")
-
-                with col2:
-                    if st.button("🔍 Review Cover Letter", use_container_width=True):
-                        with st.spinner("👁️ Analyzing cover letter layout..."):
-                            try:
-                                review = review_pdf_with_vision(
-                                    st.session_state.cover_letter_pdf, "cover_letter"
-                                )
-                                st.session_state.cover_review = review
-                            except Exception as e:
-                                st.error(f"Review failed: {e}")
-
-                # Show review results
-                if st.session_state.get("resume_review"):
-                    with st.expander("📊 Resume Review", expanded=True):
-                        st.markdown(st.session_state.resume_review)
-
-                if st.session_state.get("cover_review"):
-                    with st.expander("📊 Cover Letter Review", expanded=True):
-                        st.markdown(st.session_state.cover_review)
-            else:
-                st.info("ℹ️ Vision review requires PyMuPDF (not available on this server).")
+            if st.session_state.get("cover_review"):
+                with st.expander("📊 Cover Letter Review", expanded=True):
+                    st.markdown(st.session_state.cover_review)
 
     st.divider()
     st.markdown(
@@ -488,7 +466,7 @@ This app uses:
 - 📄 Google Docs API
 - 🔢 Vector embeddings
 - 🤖 OpenRouter (Free)
-- 👁️ AI Vision Review
+- 👁️ AI Vision Review (automatic)
     """
     )
 
@@ -537,7 +515,6 @@ def extract_text_from_doc(doc):
 # Auto-initialize on startup
 if st.session_state.qa_chain is None:
     try:
-        # Check required secrets
         doc_url = st.secrets.get("RESUME_URL", os.getenv("RESUME_URL"))
         service_account_json = st.secrets.get(
             "service_account_json", os.getenv("service_account_json")
@@ -642,14 +619,11 @@ for message in st.session_state.messages:
 if prompt := st.chat_input(
     "Copy and paste a job description or Ask a question about the resume!"
 ):
-    # Add user message to history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generate and display assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             response = st.session_state.qa_chain.invoke(prompt)
@@ -667,7 +641,7 @@ st.markdown(
 - 📄 Resume loaded from Google Docs
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
 - 🤖 AI Model: OpenRouter (Llama 3.1)
-- 👁️ Vision Review: OpenRouter Vision (Free)
+- 👁️ Vision Review: OpenRouter Vision (Free, automatic)
 """
 )
 
