@@ -15,7 +15,18 @@ import tempfile
 from weasyprint import HTML
 import markdown
 
+# Vision review imports
+import base64
+import requests
+
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+
 streamlit_analytics.start_tracking()
+
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
@@ -34,6 +45,78 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+
+def review_resume_with_vision(pdf_bytes):
+    """Convert PDF to image, send to OpenRouter vision model for layout review."""
+    if not PYMUPDF_AVAILABLE:
+        return "❌ Vision review unavailable: PyMuPDF not installed."
+
+    # Convert PDF to PNG
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    page = doc[0]
+    # Render at 150 DPI for good quality
+    mat = fitz.Matrix(150 / 72, 150 / 72)
+    pix = page.get_pixmap(matrix=mat)
+    img_bytes = pix.tobytes("png")
+    img_b64 = base64.b64encode(img_bytes).decode()
+    doc.close()
+
+    # Call OpenRouter vision API
+    api_key = st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY"))
+    vision_model = st.secrets.get("VISION_MODEL", "nvidia/nemotron-nano-12b-v2-vl:free")
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": vision_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{img_b64}"
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": """Review this resume for formatting and layout quality. Check:
+1. Is ALL text fully visible with no right-side cutoff or overlap between elements?
+2. Is the visual hierarchy clear (name prominent, section headers distinct, job titles stand out)?
+3. Are dates and job titles properly aligned without overlapping each other?
+4. Is spacing consistent between sections, bullets, and paragraphs?
+5. Is the resume ATS-friendly (clean text, standard fonts, no columns/tables)?
+
+Rate the layout 1-10. List EVERY specific issue found, even minor ones.
+Format your response as:
+**Rating: X/10**
+**Issues:**
+- [issue 1]
+- [issue 2]
+**Strengths:**
+- [strength 1]""",
+                        },
+                    ],
+                }
+            ],
+            "max_tokens": 1000,
+        },
+        timeout=60,
+    )
+
+    result = response.json()
+
+    if "error" in result:
+        return f"❌ Vision API error: {result['error'].get('message', result['error'])}"
+
+    return result["choices"][0]["message"]["content"]
+
+
 def extract_dates(resume_context):
     """Extract date ranges from resume context"""
     import re
@@ -47,6 +130,7 @@ def extract_dates(resume_context):
     for pattern in date_patterns:
         dates_found.extend(re.findall(pattern, resume_context, re.IGNORECASE))
     return list(set(dates_found))
+
 
 def generate_resume_pdf(job_description, company_name):
     """Generate a tailored resume PDF based on job description."""
@@ -141,7 +225,8 @@ def generate_resume_pdf(job_description, company_name):
     html_content = markdown_to_html(resume_markdown, "resume")
     pdf_bytes = HTML(string=html_content).write_pdf()
 
-    return pdf_bytes
+    return pdf_bytes, resume_markdown
+
 
 def generate_cover_letter_pdf(job_description, company_name):
     """Generate a cover letter PDF based on job description."""
@@ -177,6 +262,7 @@ def generate_cover_letter_pdf(job_description, company_name):
     pdf_bytes = HTML(string=html_content).write_pdf()
 
     return pdf_bytes
+
 
 def markdown_to_html(markdown_content, doc_type):
     """Convert markdown to HTML with styling."""
@@ -283,14 +369,18 @@ with st.sidebar:
         if st.button("Generate PDF Documents", type="primary"):
             if job_description:
                 with st.spinner("📄 Generating your customized documents..."):
-                    resume_pdf = generate_resume_pdf(job_description, company_name)
+                    resume_pdf, resume_md = generate_resume_pdf(
+                        job_description, company_name
+                    )
                     cover_letter_pdf = generate_cover_letter_pdf(
                         job_description, company_name
                     )
 
                     st.session_state.resume_pdf = resume_pdf
+                    st.session_state.resume_md = resume_md
                     st.session_state.cover_letter_pdf = cover_letter_pdf
                     st.session_state.company_name = company_name
+                    st.session_state.vision_review = None  # reset previous review
                     st.success("✅ PDFs generated successfully!")
 
         # Show download buttons if PDFs exist
@@ -312,24 +402,49 @@ with st.sidebar:
                 use_container_width=True,
             )
 
-    st.divider()
-    st.markdown(f"""
-    **ℹ️ About**
+            # Vision Review
+            st.divider()
+            if PYMUPDF_AVAILABLE:
+                if st.button("🔍 AI Vision Review", use_container_width=True):
+                    with st.spinner("👁️ Analyzing resume layout with AI vision..."):
+                        try:
+                            review = review_resume_with_vision(
+                                st.session_state.resume_pdf
+                            )
+                            st.session_state.vision_review = review
+                        except Exception as e:
+                            st.error(f"Vision review failed: {e}")
+            else:
+                st.info("ℹ️ Vision review requires PyMuPDF (not available on this server).")
 
-    This app uses:
-    - 📄 Google Docs API
-    - 🔢 Vector embeddings
-    - 🤖 OpenRouter (Free)
-    """)
+            # Show review results
+            if "vision_review" in st.session_state and st.session_state.vision_review:
+                st.markdown("### 📊 Vision Review Results")
+                st.markdown(st.session_state.vision_review)
+
+    st.divider()
+    st.markdown(
+        """
+**ℹ️ About**
+
+This app uses:
+- 📄 Google Docs API
+- 🔢 Vector embeddings
+- 🤖 OpenRouter (Free)
+- 👁️ AI Vision Review
+    """
+    )
 
 # Main area - Title and description
 st.title("📄 RAG Resume Chatbot")
-st.markdown(f"""
+st.markdown(
+    """
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
 It loads your resume from Google Docs, creates embeddings, and uses OpenRouter (Llama 3.1).
 
 👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
-""")
+"""
+)
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -487,13 +602,16 @@ if prompt := st.chat_input(
 
 # Footer
 st.divider()
-st.markdown(f"""
+st.markdown(
+    """
 ---
 **Made with ❤️ using Streamlit, LangChain, and OpenRouter**
 
 - 📄 Resume loaded from Google Docs
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
 - 🤖 AI Model: OpenRouter (Llama 3.1)
-""")
+- 👁️ Vision Review: OpenRouter Vision (Free)
+"""
+)
 
 streamlit_analytics.stop_tracking()
