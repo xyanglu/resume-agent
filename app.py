@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_analytics
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
@@ -14,6 +15,7 @@ import tempfile
 from weasyprint import HTML
 import markdown
 
+streamlit_analytics.start_tracking()
 
 def get_llm(temperature=0.1):
     return ChatOpenAI(
@@ -32,7 +34,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-
 def extract_dates(resume_context):
     """Extract date ranges from resume context"""
     import re
@@ -47,13 +48,12 @@ def extract_dates(resume_context):
         dates_found.extend(re.findall(pattern, resume_context, re.IGNORECASE))
     return list(set(dates_found))
 
-
 def generate_resume_pdf(job_description, company_name):
     """Generate a tailored resume PDF based on job description."""
     # Get resume content from RAG
     docs = st.session_state.vectorstore.similarity_search(
         "education skills experience work history qualifications",
-        k=15,  # Increase to get more context
+        k=15,
     )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
 
@@ -69,14 +69,13 @@ def generate_resume_pdf(job_description, company_name):
 
     name_response = llm.invoke(name_prompt)
     candidate_name = name_response.content.strip()
-    # Clean up name response
-    if len(candidate_name.split()) > 5:  # If too many words, take first 2
+    if len(candidate_name.split()) > 5:
         candidate_name = " ".join(candidate_name.split()[:2])
     candidate_name = candidate_name.replace("#", "").replace("*", "").strip()
 
     # Step 2: Generate resume with extracted name
     prompt = f"""
-    Create a 1-page resume for {company_name if company_name else "this company"}.
+    Create a professional 1-page resume for {company_name if company_name else "this company"}.
 
     CANDIDATE NAME: {candidate_name}
     USE THIS EXACT NAME AT THE TOP
@@ -87,34 +86,40 @@ def generate_resume_pdf(job_description, company_name):
     Job Description:
     {job_description}
 
-    STRICT REQUIREMENTS:
-    1. Start with: # {candidate_name}
-    2. Summary: 2 sentences, 20 words max
-    3. Skills: 5 bullet points, 5 words each
-    4. Experience: 1 job only, 2 bullets, 8 words each
-    5. Education: 1 line, 10 words max
-    6. TOTAL LIMIT: Under 800 characters
-    7. No filler, no descriptions
+    REQUIREMENTS:
+    1. Start with: # {{candidate_name}}
+    2. Summary: 2-3 sentences highlighting fit for this specific role
+    3. Skills: group by category (Languages, Frameworks, Tools, Cloud), keep only skills relevant to the JD
+    4. Experience: up to 3 most relevant positions, 2-3 bullets each starting with strong action verbs
+    5. Education: 1-2 lines
+    6. TOTAL LIMIT: Under 3000 characters
+    7. No filler words (leverage, utilize, synergize, streamline, facilitate)
+    8. Use standard ATS-friendly format with clear section headers
+    9. Be honest - only include real experience from the resume context
 
-    OUTPUT FORMAT:
+    OUTPUT FORMAT (Markdown):
     # {candidate_name}
-    [20-word summary]
+    [Contact info line]
+
+    ## Summary
+    [2-3 sentences]
 
     ## Skills
-    - [5-word skill]
-    - [5-word skill]
-    - [5-word skill]
-    - [5-word skill]
-    - [5-word skill]
+    - **Languages**: [list]
+    - **Frameworks**: [list]
+    - **Tools**: [list]
 
     ## Experience
     ### [Position]
     **[Company]** | [Dates]
-    - [8-word bullet]
-    - [8-word bullet]
+    - [Action verb] [specific achievement with metrics if available]
+    - [Action verb] [specific achievement]
 
     ## Education
     [Degree] from [School]
+
+    ## Certifications
+    [If any relevant]
     """
 
     dates_in_resume = extract_dates(resume_context)
@@ -129,8 +134,8 @@ def generate_resume_pdf(job_description, company_name):
         resume_markdown = f"# {candidate_name}\n\n{resume_markdown}"
 
     # Truncate if too long
-    if len(resume_markdown) > 800:
-        resume_markdown = resume_markdown[:800]
+    if len(resume_markdown) > 3000:
+        resume_markdown = resume_markdown[:3000]
 
     # Convert to HTML then PDF
     html_content = markdown_to_html(resume_markdown, "resume")
@@ -138,16 +143,13 @@ def generate_resume_pdf(job_description, company_name):
 
     return pdf_bytes
 
-
 def generate_cover_letter_pdf(job_description, company_name):
     """Generate a cover letter PDF based on job description."""
-    # Get resume content from RAG
     docs = st.session_state.vectorstore.similarity_search(
         "entire resume summary and all experience", k=10
     )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
 
-    # Generate cover letter
     prompt = f"""
     Write a professional cover letter for {company_name if company_name else "this company"} based on this resume and job description.
     
@@ -168,16 +170,13 @@ def generate_cover_letter_pdf(job_description, company_name):
     """
 
     llm = get_llm(temperature=0.3)
-
     response = llm.invoke(prompt)
     letter_markdown = response.content
 
-    # Convert to HTML then PDF
     html_content = markdown_to_html(letter_markdown, "cover_letter")
     pdf_bytes = HTML(string=html_content).write_pdf()
 
     return pdf_bytes
-
 
 def markdown_to_html(markdown_content, doc_type):
     """Convert markdown to HTML with styling."""
@@ -284,13 +283,11 @@ with st.sidebar:
         if st.button("Generate PDF Documents", type="primary"):
             if job_description:
                 with st.spinner("📄 Generating your customized documents..."):
-                    # Generate PDFs with company name
                     resume_pdf = generate_resume_pdf(job_description, company_name)
                     cover_letter_pdf = generate_cover_letter_pdf(
                         job_description, company_name
                     )
 
-                    # Save to session state
                     st.session_state.resume_pdf = resume_pdf
                     st.session_state.cover_letter_pdf = cover_letter_pdf
                     st.session_state.company_name = company_name
@@ -498,3 +495,5 @@ st.markdown(f"""
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
 - 🤖 AI Model: OpenRouter (Llama 3.1)
 """)
+
+streamlit_analytics.stop_tracking()
