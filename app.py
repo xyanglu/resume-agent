@@ -46,20 +46,63 @@ st.set_page_config(
 )
 
 
-def review_resume_with_vision(pdf_bytes):
+def review_pdf_with_vision(pdf_bytes, doc_type="resume"):
     """Convert PDF to image, send to OpenRouter vision model for layout review."""
     if not PYMUPDF_AVAILABLE:
         return "❌ Vision review unavailable: PyMuPDF not installed."
 
-    # Convert PDF to PNG
+    # Convert all PDF pages to PNG images
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    page = doc[0]
-    # Render at 150 DPI for good quality
-    mat = fitz.Matrix(150 / 72, 150 / 72)
-    pix = page.get_pixmap(matrix=mat)
-    img_bytes = pix.tobytes("png")
-    img_b64 = base64.b64encode(img_bytes).decode()
+    images_b64 = []
+    mat = fitz.Matrix(150 / 72, 150 / 72)  # 150 DPI
+    for page in doc:
+        pix = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("png")
+        images_b64.append(base64.b64encode(img_bytes).decode())
     doc.close()
+
+    # Build the prompt based on doc type
+    if doc_type == "cover_letter":
+        review_prompt = """Review this cover letter for formatting and layout quality. Check:
+1. Is ALL text fully visible with no cutoff, overlap, or crowding?
+2. Is the professional letter format correct (date, address, salutation, body paragraphs, closing)?
+3. Are margins and spacing consistent and professional?
+4. Is the font size readable and consistent throughout?
+5. Does it look like a clean, professional business letter?
+
+Rate the layout 1-10. List EVERY specific issue found, even minor ones.
+Format your response as:
+**Rating: X/10**
+**Issues:**
+- [issue 1]
+- [issue 2]
+**Strengths:**
+- [strength 1]"""
+    else:
+        review_prompt = """Review this resume for formatting and layout quality. Check:
+1. Is ALL text fully visible with no right-side cutoff or overlap between elements?
+2. Is the visual hierarchy clear (name prominent, section headers distinct, job titles stand out)?
+3. Are dates and job titles properly aligned without overlapping each other?
+4. Is spacing consistent between sections, bullets, and paragraphs?
+5. Is the resume ATS-friendly (clean text, standard fonts, no columns/tables)?
+
+Rate the layout 1-10. List EVERY specific issue found, even minor ones.
+Format your response as:
+**Rating: X/10**
+**Issues:**
+- [issue 1]
+- [issue 2]
+**Strengths:**
+- [strength 1]"""
+
+    # Build message content with all pages
+    content_parts = []
+    for img_b64 in images_b64:
+        content_parts.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+        })
+    content_parts.append({"type": "text", "text": review_prompt})
 
     # Call OpenRouter vision API
     api_key = st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY"))
@@ -76,32 +119,7 @@ def review_resume_with_vision(pdf_bytes):
             "messages": [
                 {
                     "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{img_b64}"
-                            },
-                        },
-                        {
-                            "type": "text",
-                            "text": """Review this resume for formatting and layout quality. Check:
-1. Is ALL text fully visible with no right-side cutoff or overlap between elements?
-2. Is the visual hierarchy clear (name prominent, section headers distinct, job titles stand out)?
-3. Are dates and job titles properly aligned without overlapping each other?
-4. Is spacing consistent between sections, bullets, and paragraphs?
-5. Is the resume ATS-friendly (clean text, standard fonts, no columns/tables)?
-
-Rate the layout 1-10. List EVERY specific issue found, even minor ones.
-Format your response as:
-**Rating: X/10**
-**Issues:**
-- [issue 1]
-- [issue 2]
-**Strengths:**
-- [strength 1]""",
-                        },
-                    ],
+                    "content": content_parts,
                 }
             ],
             "max_tokens": 1000,
@@ -235,8 +253,24 @@ def generate_cover_letter_pdf(job_description, company_name):
     )
     resume_context = "\n\n".join([doc.page_content for doc in docs])
 
+    # Extract candidate name
+    name_prompt = f"""
+    Extract ONLY candidate's full name from this resume context.
+    Return ONLY name, nothing else.
+    Resume:
+    {resume_context}
+    """
+
+    llm = get_llm(temperature=0.1)
+    name_response = llm.invoke(name_prompt)
+    candidate_name = name_response.content.strip().replace("#", "").replace("*", "").strip()
+    if len(candidate_name.split()) > 5:
+        candidate_name = " ".join(candidate_name.split()[:2])
+
     prompt = f"""
     Write a professional cover letter for {company_name if company_name else "this company"} based on this resume and job description.
+    
+    Candidate Name: {candidate_name}
     
     Resume:
     {resume_context}
@@ -245,13 +279,14 @@ def generate_cover_letter_pdf(job_description, company_name):
     {job_description}
     
     Create a compelling cover letter that:
-    1. Addresses the specific role and company
-    2. Highlights 2-3 key qualifications that match the job
-    3. Shows enthusiasm and fit for the role
-    4. Is professional and concise (300-400 words)
-    5. Uses information from the resume but tailors it to this job
+    1. Has a proper business letter format (date, company address placeholder, salutation, body, closing with name)
+    2. Addresses the specific role and company
+    3. Highlights 2-3 key qualifications that match the job
+    4. Shows enthusiasm and fit for the role
+    5. Is professional and concise (300-400 words)
+    6. Uses information from the resume but tailors it to this job
     
-    Output in clean Markdown format.
+    Output in clean Markdown format with the letter structure.
     """
 
     llm = get_llm(temperature=0.3)
@@ -380,7 +415,8 @@ with st.sidebar:
                     st.session_state.resume_md = resume_md
                     st.session_state.cover_letter_pdf = cover_letter_pdf
                     st.session_state.company_name = company_name
-                    st.session_state.vision_review = None  # reset previous review
+                    st.session_state.resume_review = None
+                    st.session_state.cover_review = None
                     st.success("✅ PDFs generated successfully!")
 
         # Show download buttons if PDFs exist
@@ -402,25 +438,46 @@ with st.sidebar:
                 use_container_width=True,
             )
 
-            # Vision Review
+            # Vision Review section
             st.divider()
+            st.markdown("### 👁️ AI Vision Review")
+            st.caption("Uses AI vision to check layout, formatting, and readability.")
+
             if PYMUPDF_AVAILABLE:
-                if st.button("🔍 AI Vision Review", use_container_width=True):
-                    with st.spinner("👁️ Analyzing resume layout with AI vision..."):
-                        try:
-                            review = review_resume_with_vision(
-                                st.session_state.resume_pdf
-                            )
-                            st.session_state.vision_review = review
-                        except Exception as e:
-                            st.error(f"Vision review failed: {e}")
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    if st.button("🔍 Review Resume", use_container_width=True):
+                        with st.spinner("👁️ Analyzing resume layout..."):
+                            try:
+                                review = review_pdf_with_vision(
+                                    st.session_state.resume_pdf, "resume"
+                                )
+                                st.session_state.resume_review = review
+                            except Exception as e:
+                                st.error(f"Review failed: {e}")
+
+                with col2:
+                    if st.button("🔍 Review Cover Letter", use_container_width=True):
+                        with st.spinner("👁️ Analyzing cover letter layout..."):
+                            try:
+                                review = review_pdf_with_vision(
+                                    st.session_state.cover_letter_pdf, "cover_letter"
+                                )
+                                st.session_state.cover_review = review
+                            except Exception as e:
+                                st.error(f"Review failed: {e}")
+
+                # Show review results
+                if st.session_state.get("resume_review"):
+                    with st.expander("📊 Resume Review", expanded=True):
+                        st.markdown(st.session_state.resume_review)
+
+                if st.session_state.get("cover_review"):
+                    with st.expander("📊 Cover Letter Review", expanded=True):
+                        st.markdown(st.session_state.cover_review)
             else:
                 st.info("ℹ️ Vision review requires PyMuPDF (not available on this server).")
-
-            # Show review results
-            if "vision_review" in st.session_state and st.session_state.vision_review:
-                st.markdown("### 📊 Vision Review Results")
-                st.markdown(st.session_state.vision_review)
 
     st.divider()
     st.markdown(
