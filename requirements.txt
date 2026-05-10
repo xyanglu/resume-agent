@@ -1,0 +1,16 @@
+streamlit
+streamlit-analytics
+langchain
+langchain-community
+langchain-openai
+langchain-google-genai
+langchain-classic
+chromadb
+sentence-transformers
+google-api-python-client
+google-auth
+requests
+weasyprint
+markdown
+protobuf>=4.21.0,<5.0.0
+PyMuPDF
