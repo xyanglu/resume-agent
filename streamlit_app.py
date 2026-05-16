@@ -710,15 +710,17 @@ def main():
             llm = get_llm(temperature=st.session_state.get("temperature", 0.1))
 
             prompt = ChatPromptTemplate.from_template(
-                """Answer the question based only on the following context and conversation history.
+                """You are a resume assistant. Answer the question using ONLY the resume text below. The resume contains sections like Experience, Education, Skills, Projects, and Certifications. Read the entire resume carefully before answering.
 
-Context from resume:
+RESUME:
 {context}
 
 Conversation history:
 {history}
 
-Question: {input}"""
+Question: {input}
+
+Instructions: Quote relevant details from the resume. If the information exists in the resume, provide it. Do NOT say the information is missing unless you have read the entire resume and it genuinely does not appear anywhere."""
             )
 
             # Helper function to format documents
