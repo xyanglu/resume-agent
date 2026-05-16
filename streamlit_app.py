@@ -472,7 +472,7 @@ def render_sidebar():
         st.markdown("---")
 
         # --- Version Info ---
-        app_version = "1.2.0"
+        app_version = "1.3.0"
         st.markdown(
             f"""
             <div style="padding:4px 0;">
@@ -613,6 +613,8 @@ def main():
         st.session_state["temperature"] = 0.1
     if "chunk_size" not in st.session_state:
         st.session_state["chunk_size"] = 4000
+    if "query_count" not in st.session_state:
+        st.session_state["query_count"] = 0
 
     # Draw sidebar
     render_sidebar()
@@ -805,6 +807,7 @@ Instructions: Quote relevant details from the resume. If the information exists 
     # Process a pending quick-question click
     if st.session_state.get("pending_query"):
         prompt = st.session_state.pop("pending_query")
+        st.session_state.query_count += 1
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -833,9 +836,15 @@ Instructions: Quote relevant details from the resume. If the information exists 
         st.session_state.messages.append({"role": "assistant", "content": response_text})
 
     # --- Chat Input ---
-    if prompt := st.chat_input("Ask me anything about the resume... 💬"):
+    MAX_QUERIES = 5
+    remaining = MAX_QUERIES - st.session_state.query_count
+
+    if remaining <= 0:
+        st.info("Session limit reached (5 questions). Refresh the page to start a new session.")
+    elif prompt := st.chat_input(f"Ask me anything about the resume... ({remaining} left) 💬"):
         # Append user message
         st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.query_count += 1
 
         with st.chat_message("user"):
             st.markdown(prompt)
