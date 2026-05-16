@@ -471,7 +471,8 @@ def render_sidebar():
 
         st.markdown("---")
 
-        # --- Model Info ---
+        # --- Version Info ---
+        app_version = "1.2.0"
         st.markdown(
             f"""
             <div style="padding:4px 0;">
@@ -479,6 +480,7 @@ def render_sidebar():
                 <div style="color:var(--text-primary); font-size:0.88rem; font-weight:600;">OpenRouter Free</div>
                 <div style="color:var(--text-secondary); font-size:0.78rem; margin-top:2px;">Embedding: MiniLM-L6-v2</div>
                 <div style="color:var(--text-secondary); font-size:0.78rem;">Vector Store: ChromaDB</div>
+                <div style="color:var(--text-secondary); font-size:0.72rem; margin-top:6px; opacity:0.7;">UI v{app_version} · 5/16</div>
             </div>
             """,
             unsafe_allow_html=True,
