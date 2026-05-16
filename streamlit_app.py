@@ -515,11 +515,11 @@ def render_sidebar():
 
             chunk_size = st.number_input(
                 "Chunk Size",
-                min_value=200,
-                max_value=2000,
-                value=500,
-                step=50,
-                help="Size of text chunks for vector store.",
+                min_value=500,
+                max_value=8000,
+                value=4000,
+                step=500,
+                help="Size of text chunks for vector store. Larger = more context per chunk.",
             )
             st.session_state["chunk_size"] = chunk_size
 
@@ -610,7 +610,7 @@ def main():
     if "temperature" not in st.session_state:
         st.session_state["temperature"] = 0.1
     if "chunk_size" not in st.session_state:
-        st.session_state["chunk_size"] = 500
+        st.session_state["chunk_size"] = 4000
 
     # Draw sidebar
     render_sidebar()
