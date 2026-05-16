@@ -567,15 +567,8 @@ def render_welcome():
             <p style="margin-top:14px; color:var(--text-secondary); font-size:0.85rem;">
                 Try asking something like:
             </p>
-            <div style="margin-top:8px;">
-                <span class="chip">What is the work experience?</span>
-                <span class="chip">What skills are listed?</span>
-                <span class="chip">Summarize the education</span>
-                <span class="chip">What projects have they built?</span>
-                <span class="chip">List all certifications</span>
-            </div>
             <p style="margin-top:18px; font-size:0.82rem; color:var(--text-secondary);">
-                Just type your question in the box below to get started! 🚀
+                Click a question below or type your own! 🚀
             </p>
         </div>
         """,
@@ -788,6 +781,52 @@ Question: {input}"""
 
     # --- Welcome Card ---
     render_welcome()
+
+    # --- Quick Question Buttons ---
+    if len(st.session_state.get("messages", [])) == 0:
+        questions = [
+            "What is the work experience?",
+            "What skills are listed?",
+            "Summarize the education",
+            "What projects have they built?",
+            "List all certifications",
+        ]
+        cols = st.columns(len(questions))
+        for i, q in enumerate(questions):
+            with cols[i]:
+                if st.button(q, key=f"quick_{i}", use_container_width=True):
+                    st.session_state["pending_query"] = q
+                    st.rerun()
+
+    # Process a pending quick-question click
+    if st.session_state.get("pending_query"):
+        prompt = st.session_state.pop("pending_query")
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        response_text = "⚠️ An error occurred."
+        with st.chat_message("assistant"):
+            typing = st.empty()
+            typing.markdown(
+                '<div class="typing-indicator"><span></span><span></span><span></span></div>',
+                unsafe_allow_html=True,
+            )
+            try:
+                response_placeholder = st.empty()
+                full_response = ""
+                for chunk in st.session_state.qa_chain.stream(prompt):
+                    full_response += chunk
+                    response_placeholder.markdown(full_response + "▌")
+                response_placeholder.markdown(full_response)
+                response_text = full_response if full_response.strip() else "Empty response."
+                typing.empty()
+            except Exception as e:
+                typing.empty()
+                response_text = f"❌ **Error:** {e}"
+                st.markdown(response_text)
+
+        st.session_state.messages.append({"role": "assistant", "content": response_text})
 
     # --- Chat Input ---
     if prompt := st.chat_input("Ask me anything about the resume... 💬"):
