@@ -1,0 +1,18 @@
+{
+  "7f3a2b": {
+    "title": "Senior AI Engineer",
+    "company": "Example Corp",
+    "location": "Remote",
+    "posted": "2026-05-15",
+    "description": "We are looking for a Senior AI Engineer to join our team and help build next-generation AI-powered products. You will be responsible for designing, building, and deploying production-grade AI systems with a focus on large language models, retrieval-augmented generation (RAG), and intelligent agents.\n\nRequirements:\n- 5+ years of experience in software engineering with a focus on AI/ML\n- Strong proficiency in Python and modern ML frameworks (PyTorch, TensorFlow)\n- Experience building and deploying RAG pipelines in production\n- Familiarity with vector databases (Chroma, Pinecone, Weaviate)\n- Experience with LangChain, LlamaIndex, or similar orchestration frameworks\n- Understanding of LLM fine-tuning, prompt engineering, and evaluation\n- Strong communication skills and ability to work in cross-functional teams\n- Experience with cloud platforms (AWS, GCP, or Azure)\n\nNice to have:\n- Experience with agent frameworks and autonomous AI systems\n- Knowledge of MLOps and model deployment pipelines\n- Contributions to open-source AI projects\n- Experience with TypeScript/JavaScript full-stack development",
+    "skills": ["python", "llm", "pytorch", "rag", "langchain", "vector-databases", "prompt-engineering", "cloud", "mlops", "agents"]
+  },
+  "a1b2c3": {
+    "title": "ML Platform Engineer",
+    "company": "TechNova Inc.",
+    "location": "Hybrid, Toronto",
+    "posted": "2026-05-18",
+    "description": "TechNova is seeking an ML Platform Engineer to design and maintain our machine learning infrastructure. You will work closely with data scientists and product engineers to build scalable ML pipelines, model serving systems, and monitoring tools.\n\nRequirements:\n- 4+ years of experience in ML engineering or platform engineering\n- Strong Python skills and experience with ML frameworks\n- Experience building CI/CD pipelines for ML models\n- Proficiency with Docker, Kubernetes, and cloud infrastructure\n- Experience with model monitoring, A/B testing, and experiment tracking\n- Understanding of data engineering concepts (ETL, data pipelines, feature stores)\n- Familiarity with LangChain or similar LLM orchestration tools\n- Excellent problem-solving and collaboration skills\n\nNice to have:\n- Experience with distributed computing (Spark, Ray)\n- Knowledge of RAG systems and LLM deployment\n- Experience with Streamlit or similar dashboarding tools\n- Google Cloud Platform experience",
+    "skills": ["python", "ml-engineering", "docker", "kubernetes", "cicd", "model-monitoring", "data-engineering", "langchain", "cloud", "rag"]
+  }
+}
