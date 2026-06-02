@@ -411,7 +411,17 @@ with st.sidebar:
                     st.session_state.cover_letter_pdf = cover_letter_pdf
                     st.session_state.company_name = company_name
 
-                # Step 2: Auto-run vision review on both
+                # Step 2: Multi-model eval (parallel)
+                with st.spinner("🔬 Running multi-model resume evaluation (3 models)..."):
+                    from resume_eval import evaluate_resume, format_eval_report
+                    eval_result = evaluate_resume(
+                        resume_md, job_description,
+                        api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY"))
+                    )
+                    st.session_state.eval_result = eval_result
+                    st.session_state.eval_report = format_eval_report(eval_result)
+
+                # Step 3: Auto-run vision review on both
                 if PYMUPDF_AVAILABLE:
                     with st.spinner("👁️ Running AI vision review on both documents..."):
                         st.session_state.resume_review = review_pdf_with_vision(
@@ -456,6 +466,11 @@ with st.sidebar:
             if st.session_state.get("cover_review"):
                 with st.expander("📊 Cover Letter Review", expanded=True):
                     st.markdown(st.session_state.cover_review)
+
+            # Multi-model eval report
+            if st.session_state.get("eval_report"):
+                st.divider()
+                st.markdown(st.session_state.eval_report)
 
     st.divider()
     st.markdown(
