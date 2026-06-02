@@ -29,12 +29,12 @@ streamlit_analytics.start_tracking()
 
 
 def get_llm(temperature=0.1):
-    zen_key = st.secrets.get("OPENCODE_ZEN_API_KEY", os.getenv("OPENCODE_ZEN_API_KEY"))
-    if zen_key:
+    zai_key = st.secrets.get("ZAI_API_KEY", os.getenv("ZAI_API_KEY"))
+    if zai_key:
         return ChatOpenAI(
-            model="deepseek-v4-flash",
-            api_key=zen_key,
-            base_url="https://opencode.ai/zen/v1",
+            model="glm-4.7-flash",
+            api_key=zai_key,
+            base_url="https://api.zai.chat/v1",
             temperature=temperature,
         )
     return ChatOpenAI(
@@ -585,12 +585,12 @@ if st.session_state.qa_chain is None:
             st.session_state.vectorstore = vectorstore
 
         with st.spinner("🤖 Loading AI model..."):
-            zen_key = st.secrets.get("OPENCODE_ZEN_API_KEY", os.getenv("OPENCODE_ZEN_API_KEY"))
-            if zen_key:
+            zai_key = st.secrets.get("ZAI_API_KEY", os.getenv("ZAI_API_KEY"))
+            if zai_key:
                 llm = ChatOpenAI(
-                    model="deepseek-v4-flash",
-                    api_key=zen_key,
-                    base_url="https://opencode.ai/zen/v1",
+                    model="glm-4.7-flash",
+                    api_key=zai_key,
+                    base_url="https://api.zai.chat/v1",
                     temperature=0.7,
                 )
             else:
