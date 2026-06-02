@@ -29,6 +29,14 @@ streamlit_analytics.start_tracking()
 
 
 def get_llm(temperature=0.1):
+    zen_key = st.secrets.get("OPENCODE_ZEN_API_KEY", os.getenv("OPENCODE_ZEN_API_KEY"))
+    if zen_key:
+        return ChatOpenAI(
+            model="deepseek-v4-flash",
+            api_key=zen_key,
+            base_url="https://opencode.ai/zen/v1",
+            temperature=temperature,
+        )
     return ChatOpenAI(
         model="openrouter/free",
         api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")),
@@ -577,12 +585,21 @@ if st.session_state.qa_chain is None:
             st.session_state.vectorstore = vectorstore
 
         with st.spinner("🤖 Loading AI model..."):
-            llm = ChatOpenAI(
-                model="openrouter/free",
-                api_key=openrouter_api_key,
-                base_url="https://openrouter.ai/api/v1",
-                temperature=0.7,
-            )
+            zen_key = st.secrets.get("OPENCODE_ZEN_API_KEY", os.getenv("OPENCODE_ZEN_API_KEY"))
+            if zen_key:
+                llm = ChatOpenAI(
+                    model="deepseek-v4-flash",
+                    api_key=zen_key,
+                    base_url="https://opencode.ai/zen/v1",
+                    temperature=0.7,
+                )
+            else:
+                llm = ChatOpenAI(
+                    model="openrouter/free",
+                    api_key=openrouter_api_key,
+                    base_url="https://openrouter.ai/api/v1",
+                    temperature=0.7,
+                )
 
             prompt = ChatPromptTemplate.from_template(
                 """Answer the question based only on the following context and conversation history.
