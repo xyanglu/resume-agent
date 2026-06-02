@@ -168,7 +168,7 @@ def get_llm(temperature=0.7):
     zai_key = get_secret("ZAI_API_KEY") or os.getenv("ZAI_API_KEY")
     if zai_key:
         return ChatOpenAI(
-            model="glm-5-turbo",
+            model="glm-4.7-flash",
             api_key=zai_key,
             base_url="https://api.zai.chat/v1",
             temperature=temperature,
