@@ -165,12 +165,12 @@ def get_secret(key, default=None):
 # Helper: LLM
 # ---------------------------------------------------------------------------
 def get_llm(temperature=0.7):
-    zen_key = get_secret("OPENCODE_ZEN_API_KEY") or os.getenv("OPENCODE_ZEN_API_KEY")
-    if zen_key:
+    zai_key = get_secret("ZAI_API_KEY") or os.getenv("ZAI_API_KEY")
+    if zai_key:
         return ChatOpenAI(
-            model="deepseek-v4-flash",
-            api_key=zen_key,
-            base_url="https://opencode.ai/zen/v1",
+            model="glm-4.7-flash",
+            api_key=zai_key,
+            base_url="https://api.zai.chat/v1",
             temperature=temperature,
         )
     return ChatOpenAI(
