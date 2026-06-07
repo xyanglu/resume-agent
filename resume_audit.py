@@ -14,9 +14,19 @@ from dotenv import load_dotenv
 
 load_dotenv("/Users/yang/.hermes/.env")
 
+# Primary: ZAI (paid, reliable for prod)
+ZAI_KEY = os.getenv("ZAI_API_KEY", os.getenv("GLM_API_KEY", ""))
+ZAI_BASE_URL = os.getenv("ZAI_BASE_URL", "https://api.zai.chat/v1")
+ZAI_MODEL = "glm-4.7-flash"
+
+# Fallback: OpenRouter free tier (for local testing)
 OR_KEY = os.getenv("OPENROUTER_API_KEY", "")
-AUDIT_MODEL = "google/gemma-4-31b-it:free"
+OR_MODEL = "google/gemma-4-31b-it:free"
+
 TODAY = datetime.now().strftime("%B %d, %Y")
+
+# Prefer ZAI for prod, fall back to OpenRouter
+USE_ZAI = bool(ZAI_KEY)
 
 RISK_PROMPT = """You are a hiring manager pre-screening a resume. Today's date is {today}. Your job is to flag ANY content that could hurt the candidate's chances. Be critical.
 
@@ -83,8 +93,35 @@ Output ONLY the filtered response text. No JSON, no commentary, no quotes.
 If the response is clean, output it verbatim."""
 
 
-def _call_model(prompt, model_id=AUDIT_MODEL):
-    """Call OpenRouter and return raw content."""
+def _call_model(prompt, model_id=None):
+    """Call ZAI (primary) or OpenRouter (fallback) and return raw content.
+    ZAI is used in production (paid, reliable); OpenRouter free tier for local testing."""
+    if USE_ZAI:
+        try:
+            resp = requests.post(
+                f"{ZAI_BASE_URL}/chat/completions",
+                headers={"Authorization": f"Bearer {ZAI_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": model_id or ZAI_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 2000,
+                    "temperature": 0.2,
+                },
+                timeout=45,
+            )
+            data = resp.json()
+            if "error" in data:
+                return None
+            content = data["choices"][0]["message"]["content"].strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            return content
+        except Exception:
+            pass  # Fall through to OpenRouter
+
+    # Fallback: OpenRouter free tier
     if not OR_KEY:
         return None
     try:
@@ -92,7 +129,7 @@ def _call_model(prompt, model_id=AUDIT_MODEL):
             "https://openrouter.ai/api/v1/chat/completions",
             headers={"Authorization": f"Bearer {OR_KEY}", "Content-Type": "application/json"},
             json={
-                "model": model_id,
+                "model": model_id or OR_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 2000,
                 "temperature": 0.2,
