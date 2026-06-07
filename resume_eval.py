@@ -18,21 +18,39 @@ import concurrent.futures
 # Model pools — tried in order, first N that respond are used
 OPENROUTER_FREE_MODELS = [
     {
+        "id": "google/gemma-4-31b-it:free",
+        "name": "Gemma 4 31B",
+        "provider": "Google",
+        "backend": "openrouter",
+    },
+    {
+        "id": "qwen/qwen3-coder:free",
+        "name": "Qwen3 Coder",
+        "provider": "Alibaba",
+        "backend": "openrouter",
+    },
+    {
+        "id": "meta-llama/llama-3.3-70b-instruct:free",
+        "name": "Llama 3.3 70B",
+        "provider": "Meta",
+        "backend": "openrouter",
+    },
+    {
+        "id": "moonshotai/kimi-k2.6:free",
+        "name": "Kimi K2.6",
+        "provider": "Moonshot",
+        "backend": "openrouter",
+    },
+    {
         "id": "nvidia/nemotron-3-super-120b-a12b:free",
         "name": "Nemotron Super 120B",
         "provider": "NVIDIA",
         "backend": "openrouter",
     },
     {
-        "id": "google/gemma-3-27b-it:free",
-        "name": "Gemma 3 27B",
-        "provider": "Google",
-        "backend": "openrouter",
-    },
-    {
-        "id": "qwen/qwen3-30b-a3b:free",
-        "name": "Qwen3 30B",
-        "provider": "Alibaba",
+        "id": "z-ai/glm-4.5-air:free",
+        "name": "GLM 4.5 Air",
+        "provider": "Z.AI",
         "backend": "openrouter",
     },
 ]
