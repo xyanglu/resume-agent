@@ -150,7 +150,77 @@ st.markdown(DARK_CSS, unsafe_allow_html=True)
 # ---------------------------------------------------------------------------
 MAX_QUERIES = 5
 RESUME_SOURCE_URL_ENV = "RESUME_URL"
+def parse_jd_text(raw_text):
+    """Parse a recruiter's brief JD text into a structured jd_entry.
+    Returns dict with title, company, description, skills."""
+    return {
+        "title": "this role",
+        "company": "your company",
+        "description": raw_text,
+        "skills": [s.strip().lower() for s in raw_text.replace(",", " ").split() 
+                   if len(s.strip()) > 2 and s.strip().lower() not in 
+                   ["the", "and", "for", "with", "from", "that", "this", "are", "have", "will"]],
+    }
+
+
 JOBS_JSON_PATH = Path(__file__).parent / "jobs.json"
+RESUME_JSON_PATH = Path.home() / "Documents" / "interview-prep" / "resume.json"
+# Also check project-local copy for HF Spaces deployment
+LOCAL_RESUME_JSON = Path(__file__).parent / "resume.json"
+
+def load_resume_from_json(path=None):
+    """Load resume text from resume.json source of truth."""
+    if path is None:
+        path = RESUME_JSON_PATH if RESUME_JSON_PATH.exists() else (
+            LOCAL_RESUME_JSON if LOCAL_RESUME_JSON.exists() else None
+        )
+    if path is None:
+        return None
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return _format_resume_text(data)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+def _format_resume_text(data):
+    """Format resume.json data into plain text (mirrors resume_to_txt.py)."""
+    lines = []
+    lines.append(f"# {data['name']}")
+    c = data.get("contact", {})
+    parts = [v for v in [c.get("location",""), c.get("email",""), c.get("linkedin",""), c.get("website",""), c.get("huggingface","")] if v]
+    lines.append(" | ".join(parts))
+    lines.append("")
+    summary = data.get("summary","")
+    if summary:
+        lines.append("## Summary")
+        lines.append(summary)
+        lines.append("")
+    lines.append("## Experience")
+    for exp in data.get("experience",[]):
+        lines.append(f"### {exp.get('title','')}")
+        lines.append(f"**{exp.get('company','')}** | {exp.get('location','')} | {exp.get('dates','')}")
+        for b in exp.get("bullets",[]):
+            lines.append(f"- {b}")
+        lines.append("")
+    lines.append("## Projects")
+    for proj in data.get("projects",[]):
+        lines.append(f"### {proj.get('title','')}")
+        if proj.get("subtitle"):
+            lines.append(f"*{proj['subtitle']}*")
+        for b in proj.get("bullets",[]):
+            lines.append(f"- {b}")
+        lines.append("")
+    lines.append("## Education")
+    for edu in data.get("education",[]):
+        lines.append(f"- {edu.get('degree','')} — {edu.get('school','')} ({edu.get('dates','')})")
+    lines.append("")
+    lines.append("## Skills")
+    for sg in data.get("skills",[]):
+        items = sg.get("items",[])
+        if items:
+            lines.append(f"- **{sg.get('category','')}**: {', '.join(items)}")
+    return "\n".join(lines)
 
 # ---------------------------------------------------------------------------
 # Helper: secrets
@@ -316,7 +386,6 @@ def generate_suggested_questions(jd_entry):
 
     return questions[:5]
 
-# ---------------------------------------------------------------------------
 # System prompts
 # ---------------------------------------------------------------------------
 SYSTEM_GENERIC = """You are Yang's AI resume assistant. You have access to Yang's resume content \
@@ -325,6 +394,9 @@ experience, and projects accurately and honestly based ONLY on the provided resu
 
 If something is not in the resume, say so — do not fabricate information.
 Keep responses concise, professional, and actionable.
+
+RECRUITER NOTES — things to handle carefully:
+{risk_notes}
 
 RESUME CONTEXT:
 {context}"""
@@ -336,6 +408,12 @@ requirements and answer questions about fit, alignment, strengths, and gaps.
 Be specific — reference actual experience and projects from the resume that match the JD requirements.
 If something is not in the resume, say so — do not fabricate information.
 Keep responses concise, professional, and actionable.
+
+RECRUITER NOTES — things to handle carefully:
+{risk_notes}
+
+ROLE CONTEXT — strategy for this specific role:
+{role_context}
 
 JOB DESCRIPTION — {title} at {company}:
 {jd}
@@ -361,25 +439,39 @@ def main():
     # Load resume (once per session)
     # ------------------------------------------------------------------
     if not st.session_state.resume_loaded:
-        resume_url = get_secret(RESUME_SOURCE_URL_ENV, "")
-        if resume_url:
-            try:
-                with st.spinner("Loading resume..."):
-                    resume_text = fetch_google_doc(resume_url)
-                st.session_state.resume_text = resume_text
-                st.session_state.vs, st.session_state.chunks = build_vector_store(resume_text)
-                st.session_state.resume_loaded = True
-            except Exception as e:
-                st.error(f"Could not load resume: {e}")
+        # Try local resume.json first (source of truth)
+        resume_text = load_resume_from_json()
+        if resume_text:
+            st.session_state.resume_text = resume_text
+            st.session_state.vs, st.session_state.chunks = build_vector_store(resume_text)
+            st.session_state.resume_loaded = True
+            st.session_state.resume_source = "resume.json"
+            # Run recruiter risk audit on load
+            with st.spinner("🔍 Auditing resume for recruiter optics..."):
+                from resume_audit import audit_recruiter_risks
+                st.session_state.risk_flags = audit_recruiter_risks(resume_text)
+        else:
+            # Fallback: Google Doc
+            resume_url = get_secret(RESUME_SOURCE_URL_ENV, "")
+            if resume_url:
+                try:
+                    with st.spinner("Loading resume from Google Docs..."):
+                        resume_text = fetch_google_doc(resume_url)
+                    st.session_state.resume_text = resume_text
+                    st.session_state.vs, st.session_state.chunks = build_vector_store(resume_text)
+                    st.session_state.resume_loaded = True
+                    st.session_state.resume_source = "google_doc"
+                except Exception as e:
+                    st.error(f"Could not load resume: {e}")
+                    st.session_state.resume_text = ""
+                    st.session_state.vs = None
+                    st.session_state.chunks = []
+                    st.session_state.resume_loaded = True  # Don't retry endlessly
+            else:
                 st.session_state.resume_text = ""
                 st.session_state.vs = None
                 st.session_state.chunks = []
-                st.session_state.resume_loaded = True  # Don't retry endlessly
-        else:
-            st.session_state.resume_text = ""
-            st.session_state.vs = None
-            st.session_state.chunks = []
-            st.session_state.resume_loaded = True
+                st.session_state.resume_loaded = True
 
     # ------------------------------------------------------------------
     # Load jobs DB & detect ?j= param
@@ -397,13 +489,67 @@ def main():
         jd_entry = st.session_state.jd_entry
 
     # ------------------------------------------------------------------
+    # JD Gate: prompt recruiter to paste a JD, but don't block chat
+    # ------------------------------------------------------------------
+    # Override: ?owner=true or ?override=MAGIC bypasses JD prompt entirely
+    override = query_params.get("owner") == "true" or query_params.get("override") == "yangadmin"
+    if override:
+        st.session_state.bypass_prompt = True
+
+    if jd_entry is None and not st.session_state.get("bypass_prompt"):
+        # Show JD prompt only on first visit (dismissable)
+        if "jd_prompt_dismissed" not in st.session_state:
+            with st.container():
+                st.markdown(
+                    """
+                    <div style="background-color: #1a1f2b; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <p style="margin:0; color:#c9d1d9;">
+                            💡 <strong>Have a specific role in mind?</strong> 
+                            Paste a job description and I'll analyze Yang's fit — skills match, gaps, 
+                            and talking points.
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                col_a, col_b = st.columns([3, 1])
+                with col_a:
+                    jd_quick = st.text_input(
+                        "Paste a job description (or leave blank to ask general questions)",
+                        placeholder="e.g. Senior Backend Engineer, Python, FastAPI...",
+                        label_visibility="collapsed",
+                    )
+                with col_b:
+                    if st.button("Analyze", use_container_width=True):
+                        if jd_quick.strip():
+                            from resume_audit import analyze_role_context
+                            jd_entry = parse_jd_text(jd_quick.strip())
+                            st.session_state.jd_entry = jd_entry
+                            st.session_state.jd_prompt_dismissed = True
+                            st.rerun()
+                # Small dismiss link
+                if st.button("Skip, ask general questions →", key="skip_jd"):
+                    st.session_state.jd_prompt_dismissed = True
+                    st.rerun()
+
+    # Run context analysis for any JD if not already done
+    if jd_entry and st.session_state.resume_text and "role_context" not in st.session_state:
+        with st.spinner("🎯 Analyzing role context..."):
+            from resume_audit import analyze_role_context
+            ctx = analyze_role_context(st.session_state.resume_text, jd_entry["title"])
+            if ctx:
+                st.session_state.role_context = ctx
+
+    # ------------------------------------------------------------------
     # Sidebar
     # ------------------------------------------------------------------
     with st.sidebar:
         st.markdown("### 📄 Yang's Resume Agent")
 
         if st.session_state.resume_text:
-            st.success(f"Resume loaded ({len(st.session_state.resume_text):,} chars)")
+            source_label = {"resume.json": "📄 resume.json", "google_doc": "📄 Google Docs"}
+            src = source_label.get(st.session_state.get("resume_source", ""), "📄")
+            st.success(f"{src} Resume loaded ({len(st.session_state.resume_text):,} chars)")
         else:
             st.warning("No resume loaded")
 
@@ -560,15 +706,36 @@ def main():
         context = retrieve_context(vs, chunks, user_input)
 
         # Build system prompt
+        flags = st.session_state.get("risk_flags", [])
+        if flags:
+            high = [f for f in flags if f.get("severity", 0) >= 7]
+            risk_notes = "Recruiter-sensitive items flagged in this resume:"
+            for f in flags:
+                risk_notes += f"\n- [{f.get('severity',5)}/10] {f.get('issue','')} — fix: {f.get('better_frame','handled in response')}"
+        else:
+            risk_notes = "None flagged."
+
+        role_context = ""
+        if jd_entry:
+            ctx = st.session_state.get("role_context", {})
+            if ctx:
+                from resume_audit import format_context_guide
+                role_context = format_context_guide(ctx)
+
         if jd_entry:
             system_text = SYSTEM_WITH_JD.format(
                 context=context,
                 jd=jd_entry["description"],
                 title=jd_entry["title"],
                 company=jd_entry["company"],
+                risk_notes=risk_notes,
+                role_context=role_context,
             )
         else:
-            system_text = SYSTEM_GENERIC.format(context=context)
+            system_text = SYSTEM_GENERIC.format(
+                context=context,
+                risk_notes=risk_notes,
+            )
 
         # Build message list for the LLM
         llm = get_llm(temperature=0.5)
@@ -583,6 +750,13 @@ def main():
                 try:
                     response = llm.invoke(prompt_messages)
                     answer = response.content
+                    # Filter response against omit/downplay rules
+                    ctx = st.session_state.get("role_context", {})
+                    if ctx:
+                        from resume_audit import filter_response
+                        filtered = filter_response(answer, ctx)
+                        if filtered and filtered != answer:
+                            answer = filtered
                 except Exception as e:
                     answer = f"Sorry, I encountered an error: {e}"
             st.markdown(answer)
