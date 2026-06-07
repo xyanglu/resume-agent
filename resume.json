@@ -1,0 +1,130 @@
+{
+  "name": "Yang Lu",
+  "contact": {
+    "location": "Markham, ON",
+    "email": "yang.lu.queens@gmail.com",
+    "linkedin": "linkedin.com/in/-yang-lu",
+    "website": "xyanglu.github.io",
+    "huggingface": "huggingface.co/xyanglu"
+  },
+  "summary": "AI Engineer with 7 years of software development experience across backend, full-stack, and AI engineering. Building LLM systems: multi-model evaluation pipelines (relevance, hallucination, safety scoring), agent frameworks (LangGraph, MCP), and RAG workflows. Strong foundation in Java, ElasticSearch, and data pipelines, combined with 2 years building AI tools and open-source agent infrastructure.",
+  "experience": [
+    {
+      "title": "AI Engineer / Consultant",
+      "company": "AI Integration Solutions",
+      "location": "Independent / Remote",
+      "dates": "09/2024 \u2013 Present",
+      "bullets": [
+        "Engineered a RAG chatbot with multi-step agentic reasoning, semantic search, and an automated evaluation pipeline measuring relevance, hallucination, and latency across 3+ model providers; deployed to HuggingFace Spaces.",
+        "Created open-source LLM evaluation toolkit with async parallel judging and latency benchmarking across 3+ LLM providers."
+      ]
+    },
+    {
+      "title": "Full-Stack Developer",
+      "company": "EduTrigger",
+      "location": "Toronto, ON",
+      "dates": "07/2023 – 07/2024",
+      "bullets": [
+        "Managed Open edX LMS deployment on Docker Compose, ensuring reliable platform uptime for education delivery.",
+        "Optimized PostgreSQL queries and data persistence in education AI tools, improving response times for student-facing features."
+      ]
+    },
+    {
+      "title": "Career Break",
+      "company": "",
+      "location": "",
+      "dates": "07/2020 – 07/2023",
+      "bullets": [
+        "Career sabbatical following COVID-19 disruption; self-directed learning across full-stack development and AI fundamentals. Re-entered in 2023 through EduTrigger, then established AI Integration Solutions in 2024."
+      ]
+    },
+    {
+      "title": "Back-End Developer",
+      "company": "Alaia Technologies",
+      "location": "Toronto, ON",
+      "dates": "07/2016 \u2013 07/2020",
+      "bullets": [
+        "Built multithreaded Java batch pipelines processing 150K listings/day via cron, pushing to ElasticSearch with automated cleanup.",
+        "Improved photo download times by 50x by switching from FTP to REST; saved 1TB+ disk space with automated cleanup.",
+        "Led code reviews for junior engineers and wrote technical documentation."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "AI Agent Infrastructure and Reliability",
+      "subtitle": "Python, Hermes Agent Framework (NousResearch)",
+      "bullets": [
+        "Submitted 10 open-source PRs to NousResearch/hermes-agent: gateway dead-letter queues, 429 exponential backoff with reconnect replay, and CJK search tokenization."
+      ]
+    },
+    {
+      "title": "RAG Agent with LangGraph and MCP",
+      "subtitle": "LangChain, LangGraph, Chroma, HuggingFace Spaces",
+      "bullets": [
+        "Built a JD-aware RAG system with custom job-link routing (?j=HASH params), semantic search over stored JDs, and match scoring — deployed to HuggingFace Spaces and Streamlit Cloud (github.com/xyanglu/resume-agent)."
+      ]
+    },
+    {
+      "title": "LLM Eval Toolkit",
+      "subtitle": "Python, httpx/asyncio, OpenRouter API",
+      "bullets": [
+        "Open-source multi-model LLM evaluation toolkit — async parallel scoring with LLM-as-judge (relevance, hallucination, safety) and latency metrics (github.com/xyanglu/llm-eval-toolkit)."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "Queen's University",
+      "degree": "Bachelor of Computing – Teradata Scholarship | Certifications: HuggingFace MCP (10/2025), DeepLearning.ai Data Engineering (06/2025)",
+      "dates": "2016"
+    }
+  ],
+  "skills": [
+    {
+      "category": "AI/ML",
+      "items": [
+        "LangChain",
+        "LangGraph",
+        "RAG",
+        "LLMs",
+        "embeddings",
+        "vector DBs (Chroma)",
+        "MCP",
+        "context engineering",
+        "agent evaluation",
+        "prompt engineering",
+        "Anthropic API"
+      ]
+    },
+    {
+      "category": "Languages and Frameworks",
+      "items": [
+        "Python",
+        "FastAPI",
+        "Java",
+        "Spring",
+        "TypeScript",
+        "React",
+        "NextJS",
+        "GraphQL",
+        "SQL",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "category": "Cloud and DevOps",
+      "items": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Docker",
+        "GitHub Actions CI/CD"
+      ]
+    }
+  ],
+  "certifications": [
+    "HuggingFace MCP (10/2025)",
+    "DeepLearning.ai Data Engineering (06/2025)"
+  ]
+}

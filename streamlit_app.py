@@ -168,20 +168,36 @@ RESUME_JSON_PATH = Path.home() / "Documents" / "interview-prep" / "resume.json"
 # Also check project-local copy for HF Spaces deployment
 LOCAL_RESUME_JSON = Path(__file__).parent / "resume.json"
 
+# GitHub raw URL for hosted resume.json
+GITHUB_RESUME_URL = "https://raw.githubusercontent.com/xyanglu/resume-agent/master/resume.json"
+
 def load_resume_from_json(path=None):
-    """Load resume text from resume.json source of truth."""
-    if path is None:
-        path = RESUME_JSON_PATH if RESUME_JSON_PATH.exists() else (
-            LOCAL_RESUME_JSON if LOCAL_RESUME_JSON.exists() else None
-        )
-    if path is None:
-        return None
+    """Load resume text from resume.json — tries GitHub raw URL first, then local files."""
+    if path is not None:
+        try:
+            with open(path) as f:
+                return _format_resume_text(json.load(f))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+
+    # Try GitHub raw URL first (always current on deploy)
     try:
-        with open(path) as f:
-            data = json.load(f)
-        return _format_resume_text(data)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+        import urllib.request
+        resp = urllib.request.urlopen(GITHUB_RESUME_URL, timeout=10)
+        data = json.loads(resp.read().decode())
+        if data and data.get("name"):
+            return _format_resume_text(data)
+    except Exception:
+        pass
+
+    # Fallback: local files
+    for p in [RESUME_JSON_PATH, LOCAL_RESUME_JSON]:
+        try:
+            with open(p) as f:
+                return _format_resume_text(json.load(f))
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    return None
 
 def _format_resume_text(data):
     """Format resume.json data into plain text (mirrors resume_to_txt.py)."""
