@@ -8,6 +8,8 @@ Evaluates resume content for:
 
 import json
 import os
+import time
+import hashlib
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
@@ -92,10 +94,29 @@ Rules:
 Output ONLY the filtered response text. No JSON, no commentary, no quotes.
 If the response is clean, output it verbatim."""
 
+# Cache: {hash(prompt+model): response}
+_call_cache = {}
 
 def _call_model(prompt, model_id=None):
-    """Call ZAI (primary) or OpenRouter (fallback) and return raw content.
-    ZAI is used in production (paid, reliable); OpenRouter free tier for local testing."""
+    """Call ZAI (primary) or OpenRouter (fallback) with retry+backoff and cache.
+    Returns raw content string or None on failure."""
+    model = model_id or (ZAI_MODEL if USE_ZAI else OR_MODEL)
+    cache_key = hashlib.md5(f"{prompt}|{model}".encode()).hexdigest()
+    
+    if cache_key in _call_cache:
+        return _call_cache[cache_key]
+    
+    for attempt in range(3):
+        result = _try_call(prompt, model_id)
+        if result is not None:
+            _call_cache[cache_key] = result
+            return result
+        if attempt < 2:
+            time.sleep(2 ** attempt)  # 1s, 2s
+    return None
+
+def _try_call(prompt, model_id=None):
+    """Single attempt to call ZAI or OpenRouter."""
     if USE_ZAI:
         try:
             resp = requests.post(
@@ -111,17 +132,15 @@ def _call_model(prompt, model_id=None):
             )
             data = resp.json()
             if "error" in data:
+                code = data["error"].get("code", 0)
+                if code == 429:
+                    return None  # Retryable
                 return None
             content = data["choices"][0]["message"]["content"].strip()
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-            return content
+            return _clean_json_markers(content)
         except Exception:
             pass  # Fall through to OpenRouter
 
-    # Fallback: OpenRouter free tier
     if not OR_KEY:
         return None
     try:
@@ -138,15 +157,22 @@ def _call_model(prompt, model_id=None):
         )
         data = resp.json()
         if "error" in data:
+            code = data["error"].get("code", 0)
+            if code == 429:
+                return None  # Retryable
             return None
         content = data["choices"][0]["message"]["content"].strip()
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0].strip()
-        elif "```" in content:
-            content = content.split("```")[1].split("```")[0].strip()
-        return content
+        return _clean_json_markers(content)
     except Exception:
         return None
+
+def _clean_json_markers(content):
+    """Strip ```json or ``` markers from model output."""
+    if "```json" in content:
+        content = content.split("```json")[1].split("```")[0].strip()
+    elif "```" in content:
+        content = content.split("```")[1].split("```")[0].strip()
+    return content
 
 
 def audit_recruiter_risks(resume_text):
