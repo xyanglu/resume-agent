@@ -7,16 +7,19 @@
     "website": "xyanglu.github.io",
     "huggingface": "huggingface.co/xyanglu"
   },
-  "summary": "AI Engineer with 7 years of software development experience across backend, full-stack, and AI engineering. Building LLM systems: multi-model evaluation pipelines (relevance, hallucination, safety scoring), agent frameworks (LangGraph, MCP), and RAG workflows. Strong foundation in Java, ElasticSearch, and data pipelines, combined with 2 years building AI tools and open-source agent infrastructure.",
+  "summary": "AI/ML Engineer with 7 years of software development experience. Built and deployed LLM-powered applications end-to-end: RAG pipelines with semantic search, multi-model evaluation toolkits, and agent frameworks (LangGraph, MCP). 10 open-source PRs to NousResearch/hermes-agent with verifiable public output. Combines production backend engineering (Java, Python, SQL) with applied AI systems. TN-eligible for US roles.",
   "experience": [
     {
-      "title": "AI Engineer / Consultant",
+      "title": "Independent AI Engineer — Open Source & R&D",
       "company": "AI Integration Solutions",
       "location": "Independent / Remote",
-      "dates": "09/2024 \u2013 Present",
+      "dates": "09/2024 – Present",
       "bullets": [
-        "Engineered a RAG chatbot with multi-step agentic reasoning, semantic search, and an automated evaluation pipeline measuring relevance, hallucination, and latency across 3+ model providers; deployed to HuggingFace Spaces.",
-        "Created open-source LLM evaluation toolkit with async parallel judging and latency benchmarking across 3+ LLM providers."
+        "Engineered a RAG chatbot with multi-step agentic reasoning, semantic search (vector DB embeddings), and an LLM-as-judge evaluation pipeline measuring relevance and latency across 3+ model providers; deployed to HuggingFace Spaces.",
+        "Created open-source LLM evaluation toolkit with async parallel judging across multiple LLM providers, relevance scoring, and latency benchmarking — automated via GitHub Actions CI/CD with Docker.",
+        "Submitted 10 open-source PRs to NousResearch/hermes-agent: gateway dead-letter queues, 429 exponential backoff with reconnect replay, and CJK search tokenization.",
+        "Built vector search infrastructure using Chroma for semantic document retrieval and LLM memory in agentic RAG workflows — supporting JD-aware matching and contextual reranking.",
+        "Applied AI-accelerated engineering practices using Copilot, Claude, and IDE agents to speed design, implementation, testing, and refactoring — established prompt-to-code workflows with review discipline for secure, traceable changes."
       ]
     },
     {
@@ -26,7 +29,7 @@
       "dates": "07/2023 – 07/2024",
       "bullets": [
         "Managed Open edX LMS deployment on Docker Compose, ensuring reliable platform uptime for education delivery.",
-        "Optimized PostgreSQL queries and data persistence in education AI tools, improving response times for student-facing features."
+        "Worked with existing PostgreSQL schema and data persistence in education tools, supporting student-facing workflows."
       ]
     },
     {
@@ -35,14 +38,14 @@
       "location": "",
       "dates": "07/2020 – 07/2023",
       "bullets": [
-        "Career sabbatical following COVID-19 disruption; self-directed learning across full-stack development and AI fundamentals. Re-entered in 2023 through EduTrigger, then established AI Integration Solutions in 2024."
+        "Career pause following COVID-19 disruption; self-directed learning in full-stack development, Python, and modern software engineering fundamentals."
       ]
     },
     {
       "title": "Back-End Developer",
       "company": "Alaia Technologies",
       "location": "Toronto, ON",
-      "dates": "07/2016 \u2013 07/2020",
+      "dates": "07/2016 – 07/2020",
       "bullets": [
         "Built multithreaded Java batch pipelines processing 150K listings/day via cron, pushing to ElasticSearch with automated cleanup.",
         "Improved photo download times by 50x by switching from FTP to REST; saved 1TB+ disk space with automated cleanup.",
@@ -69,7 +72,7 @@
       "title": "LLM Eval Toolkit",
       "subtitle": "Python, httpx/asyncio, OpenRouter API",
       "bullets": [
-        "Open-source multi-model LLM evaluation toolkit — async parallel scoring with LLM-as-judge (relevance, hallucination, safety) and latency metrics (github.com/xyanglu/llm-eval-toolkit)."
+        "Open-source multi-model LLM evaluation toolkit — async parallel scoring with LLM-as-judge relevance assessment and latency metrics (github.com/xyanglu/llm-eval-toolkit)."
       ]
     }
   ],
@@ -82,7 +85,7 @@
   ],
   "skills": [
     {
-      "category": "AI/ML",
+      "category": "Machine Learning & AI",
       "items": [
         "LangChain",
         "LangGraph",
@@ -91,10 +94,11 @@
         "embeddings",
         "vector DBs (Chroma)",
         "MCP",
-        "context engineering",
-        "agent evaluation",
+        "LLM-as-judge evaluation",
         "prompt engineering",
-        "Anthropic API"
+        "OpenRouter API",
+        "Z.AI API",
+        "model evaluation"
       ]
     },
     {
@@ -113,13 +117,12 @@
       ]
     },
     {
-      "category": "Cloud and DevOps",
+      "category": "DevOps and Infrastructure",
       "items": [
-        "AWS",
-        "Azure",
-        "GCP",
         "Docker",
-        "GitHub Actions CI/CD"
+        "GitHub Actions CI/CD",
+        "HuggingFace Spaces deployment",
+        "Linux/macOS server administration"
       ]
     }
   ],
