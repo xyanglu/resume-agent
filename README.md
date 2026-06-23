@@ -8,59 +8,85 @@ app_file: app.py
 pinned: false
 ---
 
-# Resume Agent Chatbot
+# RAG Resume Agent
 
-An AI-powered RAG chatbot that answers questions about a candidate using their resume pulled from Google Docs. Built with LangChain, supports multiple LLM providers (OpenRouter, Z.AI GLM, Google Gemini).
+A deployed resume Q&A agent that answers recruiter-facing questions from structured resume data.
 
-## Features
+Live demo: https://huggingface.co/spaces/xyanglu/resume-agent-chatbot
 
-- **Dynamic Resume Integration** — Fetches the latest resume from Google Docs automatically
-- **RAG Pipeline** — LangChain QA chains for context-aware retrieval and generation
-- **Multi-LLM Support** — OpenRouter/free, Z.AI GLM, or Google Gemini 3 Flash
-- **Chat History** — Maintains conversation context for follow-up questions
-- **Smart Caching** — 5-minute TTL to reduce API calls
-- **Candidate-Focused** — Declines questions unrelated to the candidate's background
-- **Dual Interface** — Gradio and Streamlit versions included
+Instead of treating a resume as a static PDF, this project makes the resume queryable. It uses retrieval over a structured `resume.json` source of truth, then answers questions with role context and resume-grounded evidence.
 
-## Tech Stack
+## What it does
 
-- **Frontend**: Gradio & Streamlit
-- **Backend**: Python, LangChain
-- **AI Models**: OpenRouter/free, Z.AI GLM-4.7-flash, Google Gemini 3 Flash
-- **Data Source**: Google Docs (public export)
-- **Hosting**: Hugging Face Spaces
+- Answers questions about experience, projects, skills, and role fit
+- Uses structured resume data instead of scraping a PDF
+- Supports role-aware context through tracked job links
+- Grounds responses in retrieved resume content
+- Includes an access gate for recruiter/job-specific links
+- Runs as a Streamlit app on Hugging Face Spaces
 
-## Quick Start
+Example questions:
+
+- What AI systems has this candidate built?
+- Where has he used LangGraph, RAG, or vector search?
+- How does his backend engineering experience connect to AI engineering?
+- What should be emphasized for this role?
+
+## Tech stack
+
+- Python
+- Streamlit
+- LangChain
+- LangGraph patterns
+- Chroma vector search
+- OpenRouter / Z.AI model providers
+- Hugging Face Spaces
+- GitHub-hosted `resume.json` source of truth
+
+## Architecture
+
+1. Resume data is maintained in `resume.json`
+2. The app formats the structured resume into retrievable text
+3. Text chunks are embedded and stored in Chroma
+4. User questions are routed through retrieval and chat context
+5. Responses are generated from retrieved resume evidence
+6. Optional job-link parameters add role context for targeted Q&A
+
+## Why this exists
+
+Recruiters and hiring managers do not always ask the same questions a resume answers directly.
+
+This project explores a simple idea: a candidate profile should be inspectable. Instead of guessing which bullets matter for each reader, the resume can answer targeted questions while staying tied to the documented source of truth.
+
+The goal is not to decorate experience. The goal is to make real experience easier to inspect.
+
+## Related open-source work
+
+I also submitted public PRs to NousResearch/hermes-agent, focused on reliability and messaging workflows in an AI agent framework:
+
+- Signal document attachment handling: https://github.com/NousResearch/hermes-agent/pull/38728
+- Gateway replay for buffered Signal messages: https://github.com/NousResearch/hermes-agent/pull/37643
+- Voice transcript preservation through context compression: https://github.com/NousResearch/hermes-agent/pull/37640
+- Rate-limit message queue for gateway sessions: https://github.com/NousResearch/hermes-agent/pull/31092
+- CJK search tokenization and session lineage fixes: https://github.com/NousResearch/hermes-agent/pull/24048
+- Signal long-message reassembly and attachment classification: https://github.com/NousResearch/hermes-agent/pull/24047
+- Cron 429 retry queue with exponential backoff: https://github.com/NousResearch/hermes-agent/pull/24046
+- Gateway dead-letter queue for rate-limited messages: https://github.com/NousResearch/hermes-agent/pull/24045
+
+These PRs are listed as submitted public contributions, not claimed as merged unless GitHub shows them merged.
+
+## Local development
 
 ```bash
-# Streamlit (recommended)
-streamlit run streamlit_app.py
-
-# Gradio
-python app.py
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
-Set your API key via environment variables:
+Environment variables:
 
 ```bash
-# OpenRouter (default)
-OPENROUTER_API_KEY=your_key
-
-# Z.AI
 ZAI_API_KEY=your_key
-
-# Google Gemini
-GOOGLE_API_KEY=your_key
+OPENROUTER_API_KEY=your_key
 ```
 
-## Live Demo
-
-Hosted on Hugging Face Spaces.
-
-## How It Works
-
-1. Resume content is fetched from a public Google Doc
-2. Content is cached for 5 minutes to minimize API calls
-3. User questions are processed through a LangChain QA chain with the resume as context
-4. Chat history is maintained for follow-up questions
-5. Non-candidate questions are politely declined
+The deployed Space uses Streamlit with `app.py` as the entry point.
