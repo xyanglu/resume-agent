@@ -1,5 +1,5 @@
 import streamlit as st
-import streamlit_analytics
+# streamlit_analytics removed — incompatible with Streamlit 1.50+ (experimental_get_query_params removed)
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
@@ -25,7 +25,7 @@ try:
 except ImportError:
     PYMUPDF_AVAILABLE = False
 
-streamlit_analytics.start_tracking()
+
 
 
 def get_llm(temperature=0.1):
@@ -677,4 +677,5 @@ st.markdown(
 """
 )
 
-streamlit_analytics.stop_tracking()
+
+
