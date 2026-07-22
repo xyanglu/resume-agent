@@ -1,5 +1,9 @@
 import streamlit as st
 # streamlit_analytics removed — incompatible with Streamlit 1.50+ (experimental_get_query_params removed)
+import sys
+import os as _os
+# Ensure the app's own directory is on the path so local modules resolve on HF Spaces
+sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 from analytics import (
     track_page_view,
     track_chat_query,

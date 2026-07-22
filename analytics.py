@@ -44,15 +44,17 @@ def _get_user_info(st):
 
 
 def _get_referrer(st):
-    """Resolve the obscured ref code to a human-readable label via REFERRAL_CODES."""
+    """Resolve the obscured ref code to a human-readable label."""
     try:
         code = st.query_params.get("ref", st.query_params.get("utm_source", ""))
-        # Try to resolve via the mapping in app.py
-        try:
-            from app import REFERRAL_CODES
-            return REFERRAL_CODES.get(code, code or "direct")
-        except Exception:
-            return code or "direct"
+        # Inline the mapping to avoid circular import with app.py
+        REFERRAL_CODES = {
+            "r7": "agency-owner-binlehui",
+            "r8": "recruiter-julieta",
+            "r9": "recruiter-ricky",
+            "r10": "recruiter-general",
+        }
+        return REFERRAL_CODES.get(code, code or "direct")
     except Exception:
         return "direct"
 
