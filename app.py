@@ -1,5 +1,12 @@
 import streamlit as st
 # streamlit_analytics removed — incompatible with Streamlit 1.50+ (experimental_get_query_params removed)
+from analytics import (
+    track_page_view,
+    track_chat_query,
+    track_chat_response,
+    track_init,
+    track_error,
+)
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
@@ -8,12 +15,31 @@ from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
 import os
 import tempfile
 from weasyprint import HTML
 import markdown
+
+from response_verifier import verify_qa_response
+
+# --- Obscured referral codes → real names ---
+# These map short codes in ?ref= to human-readable labels you see in analytics.
+# The visitor only sees the opaque code, never the name.
+REFERRAL_CODES = {
+    "r7": "agency-owner-binlehui",
+    "r8": "recruiter-julieta",
+    "r9": "recruiter-ricky",
+    "r10": "recruiter-general",
+}
+
+
+def get_referral_label():
+    """Get the human-readable label for the current visitor's referral code."""
+    try:
+        code = st.query_params.get("ref", "")
+        return REFERRAL_CODES.get(code, code or "direct")
+    except Exception:
+        return "direct"
 
 # Vision review imports
 import base64
@@ -29,6 +55,17 @@ except ImportError:
 
 
 def get_llm(temperature=0.1):
+    openrouter_key = st.secrets.get(
+        "OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")
+    )
+    if openrouter_key:
+        return ChatOpenAI(
+            model="openrouter/free",
+            api_key=openrouter_key,
+            base_url="https://openrouter.ai/api/v1",
+            temperature=temperature,
+        )
+
     zai_key = st.secrets.get("ZAI_API_KEY", os.getenv("ZAI_API_KEY"))
     if zai_key:
         return ChatOpenAI(
@@ -36,13 +73,9 @@ def get_llm(temperature=0.1):
             api_key=zai_key,
             base_url="https://api.zai.chat/v1",
             temperature=temperature,
+            extra_body={"thinking": {"type": "disabled"}},
         )
-    return ChatOpenAI(
-        model="openrouter/free",
-        api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")),
-        base_url="https://openrouter.ai/api/v1",
-        temperature=temperature,
-    )
+    raise RuntimeError("No supported model-provider API key is configured")
 
 
 # Page configuration
@@ -423,8 +456,12 @@ with st.sidebar:
                 with st.spinner("🔬 Running multi-model resume evaluation (3 models)..."):
                     from resume_eval import evaluate_resume, format_eval_report
                     eval_result = evaluate_resume(
-                        resume_md, job_description,
-                        api_key=st.secrets.get("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY"))
+                        resume_md,
+                        job_description,
+                        source_resume=st.session_state.resume_source_text,
+                        api_key=st.secrets.get(
+                            "OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")
+                        ),
                     )
                     st.session_state.eval_result = eval_result
                     st.session_state.eval_report = format_eval_report(eval_result)
@@ -488,7 +525,8 @@ with st.sidebar:
 This app uses:
 - 📄 Google Docs API
 - 🔢 Vector embeddings
-- 🤖 OpenRouter (Free)
+- 🤖 Z.AI / OpenRouter model providers
+- ✅ Source-grounded second-pass verification
 - 👁️ AI Vision Review (automatic)
     """
     )
@@ -498,7 +536,7 @@ st.title("📄 RAG Resume Chatbot")
 st.markdown(
     """
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
-It loads your resume from Google Docs, creates embeddings, and uses OpenRouter (Llama 3.1).
+It loads your resume from Google Docs, creates embeddings, and checks each draft answer against the source resume before displaying it.
 
 👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
 """
@@ -511,64 +549,134 @@ if "qa_chain" not in st.session_state:
     st.session_state.qa_chain = None
 
 
+def resume_json_to_text(data):
+    """Convert resume.json into natural-language prose for optimal RAG quality."""
+    sections = []
+
+    # Header
+    name = data.get("name", "")
+    contact = data.get("contact", {})
+    loc = contact.get("location", "")
+    sections.append(f"Name: {name}. Location: {loc}.")
+
+    # Summary
+    summary = data.get("summary", "")
+    if summary:
+        sections.append(f"Professional Summary: {summary}")
+
+    # Capabilities (key for the agency owner use case)
+    capabilities = data.get("capabilities", [])
+    if capabilities:
+        cap_text = "Technical Capabilities — What Yang Can Build:\n" + "\n".join(
+            f"- {c}" for c in capabilities
+        )
+        sections.append(cap_text)
+
+    # Bilingual
+    bilingual = data.get("bilingual", {})
+    if bilingual:
+        langs = ", ".join(bilingual.get("languages", []))
+        apps = bilingual.get("applications", [])
+        bi_text = f"Bilingual Capability: {langs}.\n"
+        if apps:
+            bi_text += "Applications:\n" + "\n".join(f"- {a}" for a in apps)
+        sections.append(bi_text)
+
+    # Experience
+    for exp in data.get("experience", []):
+        title = exp.get("title", "")
+        company = exp.get("company", "")
+        loc = exp.get("location", "")
+        header = f"Role: {title}"
+        if company:
+            header += f" at {company}"
+        if loc:
+            header += f" ({loc})"
+        bullets = exp.get("bullets", [])
+        if bullets:
+            body = "\n".join(f"- {b}" for b in bullets)
+            sections.append(f"{header}\n{body}")
+        else:
+            sections.append(header)
+
+    # Projects
+    for proj in data.get("projects", []):
+        title = proj.get("title", "")
+        subtitle = proj.get("subtitle", "")
+        header = f"Project: {title}"
+        if subtitle:
+            header += f" — {subtitle}"
+        bullets = proj.get("bullets", [])
+        if bullets:
+            body = "\n".join(f"- {b}" for b in bullets)
+            sections.append(f"{header}\n{body}")
+        else:
+            sections.append(header)
+
+    # Skills
+    for skill_group in data.get("skills", []):
+        cat = skill_group.get("category", "")
+        items = ", ".join(skill_group.get("items", []))
+        if cat and items:
+            sections.append(f"Skills — {cat}: {items}")
+
+    # Education
+    for edu in data.get("education", []):
+        school = edu.get("school", "")
+        degree = edu.get("degree", "")
+        text = f"Education: {degree} at {school}."
+        sections.append(text)
+
+    # Certifications
+    certs = data.get("certifications", [])
+    if certs:
+        sections.append(f"Certifications: {', '.join(certs)}")
+
+    return "\n\n".join(sections)
+
+
 def extract_text_from_doc(doc):
-    """Extract plain text from Google Docs API response"""
-    text = []
-    content = doc.get("body").get("content")
+    """Deprecated — kept for backward compat. No longer used."""
+    return ""
 
-    for element in content:
-        if "paragraph" in element:
-            paragraph = element["paragraph"]
-            for elem in paragraph.get("elements", []):
-                if "textRun" in elem:
-                    text.append(elem["textRun"]["content"])
-        elif "table" in element:
-            table = element["table"]
-            for row in table.get("tableRows", []):
-                for cell in row.get("tableCells", []):
-                    for elem in cell.get("content", []):
-                        if "paragraph" in elem:
-                            for p_elem in elem["paragraph"].get("elements", []):
-                                if "textRun" in p_elem:
-                                    text.append(p_elem["textRun"]["content"])
 
-    return "".join(text)
+def format_docs(docs):
+    """Join retrieved résumé chunks for generation."""
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
+def format_history(messages):
+    """Format prior turns without including the current user message twice."""
+    return "\n".join(
+        f"User: {message['content']}"
+        if message["role"] == "user"
+        else f"Assistant: {message['content']}"
+        for message in messages
+    )
 
 
 # Auto-initialize on startup
-if st.session_state.qa_chain is None:
+if st.session_state.qa_chain is None or "qa_retriever" not in st.session_state:
+    track_page_view(st)
     try:
-        doc_url = st.secrets.get("RESUME_URL", os.getenv("RESUME_URL"))
-        service_account_json = st.secrets.get(
-            "service_account_json", os.getenv("service_account_json")
-        )
         openrouter_api_key = st.secrets.get(
             "OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY")
         )
 
-        if not all([doc_url, service_account_json, openrouter_api_key]):
+        if not openrouter_api_key:
             st.error(
-                "❌ Missing required secrets. Please set: RESUME_URL, service_account_json, OPENROUTER_API_KEY"
+                "❌ Missing required secret: OPENROUTER_API_KEY"
             )
             st.stop()
 
-        with st.spinner("📄 Loading your resume from Google Docs..."):
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", delete=False
-            ) as f:
-                f.write(service_account_json)
-                creds_path = f.name
+        with st.spinner("📄 Loading resume from resume.json..."):
+            import json as _json
+            resume_path = os.path.join(os.path.dirname(__file__), "resume.json")
+            with open(resume_path) as f:
+                resume_data = _json.load(f)
 
-            creds = service_account.Credentials.from_service_account_file(
-                creds_path,
-                scopes=["https://www.googleapis.com/auth/documents.readonly"],
-            )
-
-            doc_id = doc_url.split("/d/")[1].split("/")[0]
-            service = build("docs", "v1", credentials=creds)
-            doc = service.documents().get(documentId=doc_id).execute()
-
-            content = extract_text_from_doc(doc)
+            content = resume_json_to_text(resume_data)
+            st.session_state.resume_source_text = content
             documents = [Document(page_content=content)]
 
             text_splitter = RecursiveCharacterTextSplitter(
@@ -583,23 +691,10 @@ if st.session_state.qa_chain is None:
             vectorstore = Chroma.from_documents(chunks, embedding=embeddings)
             retriever = vectorstore.as_retriever()
             st.session_state.vectorstore = vectorstore
+            st.session_state.qa_retriever = retriever
 
         with st.spinner("🤖 Loading AI model..."):
-            zai_key = st.secrets.get("ZAI_API_KEY", os.getenv("ZAI_API_KEY"))
-            if zai_key:
-                llm = ChatOpenAI(
-                    model="glm-4.7-flash",
-                    api_key=zai_key,
-                    base_url="https://api.zai.chat/v1",
-                    temperature=0.7,
-                )
-            else:
-                llm = ChatOpenAI(
-                    model="openrouter/free",
-                    api_key=openrouter_api_key,
-                    base_url="https://openrouter.ai/api/v1",
-                    temperature=0.7,
-                )
+            llm = get_llm(temperature=0.2)
 
             prompt = ChatPromptTemplate.from_template(
                 """Answer the question based only on the following context and conversation history.
@@ -613,66 +708,108 @@ Conversation history:
 Question: {input}"""
             )
 
-            def format_docs(docs):
-                return "\n\n".join(doc.page_content for doc in docs)
-
-            def get_history():
-                messages = st.session_state.get("messages", [])
-                return "\n".join(
-                    f"User: {m['content']}"
-                    if m["role"] == "user"
-                    else f"Assistant: {m['content']}"
-                    for m in messages
-                )
-
             st.session_state.qa_chain = (
                 {
                     "context": retriever | format_docs,
-                    "history": lambda x: get_history(),
+                    "history": lambda x: format_history(
+                        st.session_state.get("messages", [])
+                    ),
                     "input": RunnablePassthrough(),
                 }
                 | prompt
                 | llm
                 | StrOutputParser()
             )
+            st.session_state.qa_prompt_template = prompt
+            st.session_state.qa_llm = llm
+            st.session_state.qa_verifier_llm = get_llm(temperature=0.0)
 
         st.success("✅ Resume loaded! You can now ask questions.")
+        track_init(st, ok=True, msg=f"chars={len(st.session_state.resume_source_text)}")
 
     except Exception as e:
         st.error(f"❌ Initialization error: {str(e)}")
+        track_error(st, "init", str(e)[:200])
         st.stop()
 
 # Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        verification = message.get("verification")
+        if message["role"] == "assistant" and verification:
+            if verification.get("verified") and verification.get("verdict") == "pass":
+                st.caption("✅ Second opinion: verified against the source résumé")
+            elif verification.get("verified"):
+                st.caption("📝 Second opinion: revised using source résumé evidence")
+            else:
+                st.caption("⚠️ Second opinion unavailable: unverified draft withheld")
 
 # Chat input
 if prompt := st.chat_input(
     "Copy and paste a job description or Ask a question about the resume!"
 ):
     st.session_state.messages.append({"role": "user", "content": prompt})
+    track_chat_query(st, prompt)
 
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = st.session_state.qa_chain.invoke(prompt)
-        st.markdown(response)
+            retrieved_docs = st.session_state.qa_retriever.invoke(prompt)
+            generation_chain = (
+                st.session_state.qa_prompt_template
+                | st.session_state.qa_llm
+                | StrOutputParser()
+            )
+            draft_response = generation_chain.invoke({
+                "context": format_docs(retrieved_docs),
+                "history": format_history(st.session_state.messages[:-1]),
+                "input": prompt,
+            })
 
-    st.session_state.messages.append({"role": "assistant", "content": response})
+        with st.spinner("Checking answer against the source résumé..."):
+            verification = verify_qa_response(
+                question=prompt,
+                draft_response=draft_response,
+                source_resume=st.session_state.resume_source_text,
+                verifier=st.session_state.qa_verifier_llm,
+            )
+            response = verification["final_response"]
+
+        st.markdown(response)
+        if verification["verified"] and verification["verdict"] == "pass":
+            st.caption("✅ Second opinion: verified against the source résumé")
+        elif verification["verified"]:
+            st.caption("📝 Second opinion: revised to remove unsupported claims")
+            with st.expander("Verification details"):
+                for issue in verification["issues"]:
+                    st.write(f"- {issue}")
+        else:
+            st.warning(
+                "Second-opinion verification was unavailable; the unverified draft was withheld."
+            )
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": response,
+        "verification": verification,
+    })
+    v_status = "pass" if verification["verified"] and verification["verdict"] == "pass" else ("revised" if verification["verified"] else "unverified")
+    track_chat_response(st, len(response), v_status)
 
 # Footer
 st.divider()
 st.markdown(
     """
 ---
-**Made with ❤️ using Streamlit, LangChain, and OpenRouter**
+**Made with ❤️ using Streamlit, LangChain, and Chroma**
 
-- 📄 Resume loaded from Google Docs
+- 📄 Resume loaded from resume.json
 - 🔢 Embeddings: sentence-transformers/all-MiniLM-L6-v2
-- 🤖 AI Model: OpenRouter (Llama 3.1)
+- 🤖 AI Model: Z.AI / OpenRouter (configured runtime)
+- ✅ Q&A verification: second-pass check against source resume evidence
 - 👁️ Vision Review: OpenRouter Vision (Free, automatic)
 """
 )

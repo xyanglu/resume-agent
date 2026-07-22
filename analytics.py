@@ -44,10 +44,17 @@ def _get_user_info(st):
 
 
 def _get_referrer(st):
+    """Resolve the obscured ref code to a human-readable label via REFERRAL_CODES."""
     try:
-        return st.query_params.get("ref", st.query_params.get("utm_source", ""))
+        code = st.query_params.get("ref", st.query_params.get("utm_source", ""))
+        # Try to resolve via the mapping in app.py
+        try:
+            from app import REFERRAL_CODES
+            return REFERRAL_CODES.get(code, code or "direct")
+        except Exception:
+            return code or "direct"
     except Exception:
-        return ""
+        return "direct"
 
 
 def _get_duration(st):
@@ -136,10 +143,16 @@ def track_page_view(st):
     track(st, "page_view")
 
 def track_chat_query(st, text):
-    track(st, "chat_query", text[:100].replace("\n", " ") if text else "")
+    """Log the full question text — this is the key data Yang wants to see."""
+    track(st, "chat_query", text.replace("\n", " ") if text else "")
 
-def track_chat_response(st, length):
-    track(st, "chat_response", f"len={length}")
+
+def track_chat_response(st, length, verification_status=""):
+    """Log response length and verification outcome."""
+    detail = f"len={length}"
+    if verification_status:
+        detail += f"|verified={verification_status}"
+    track(st, "chat_response", detail)
 
 def track_pdf_generate(st, doc_type, company=""):
     track(st, "pdf_generate", f"{doc_type}|company={company}")
