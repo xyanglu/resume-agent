@@ -27,7 +27,8 @@ jobs:
       - name: Copy files to HuggingFace Space
         run: |
           rm -rf hf_space/*
-          cp app.py requirements.txt README.md hf_space/
+          # Streamlit imports these local modules and reads the resume data at runtime.
+          cp app.py analytics.py response_verifier.py resume_eval.py resume.json requirements.txt README.md hf_space/
           if [ -d ".streamlit" ]; then
             cp -r .streamlit hf_space/
           fi
