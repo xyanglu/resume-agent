@@ -90,6 +90,9 @@ EVAL_PROMPT = """You are an expert technical recruiter evaluating how well a tai
 JOB DESCRIPTION:
 {job_description}
 
+SOURCE RESUME EVIDENCE:
+{source_resume}
+
 TAILORED RESUME:
 {resume}
 
@@ -98,7 +101,7 @@ Score each dimension 1-10 with a brief reason:
 1. **Skills Match**: Does the resume highlight skills the JD explicitly requires?
 2. **Relevance**: Does the summary and experience directly address the role's focus?
 3. **Keyword Coverage**: Are key terms from the JD present (technologies, frameworks, domains)?
-4. **Honesty Check**: Does the resume appear to fabricate or exaggerate claims beyond what a candidate could reasonably have?
+4. **Factual Grounding**: Is every factual claim in the tailored resume supported by the source resume evidence? Treat absent information as unsupported; do not infer experience.
 5. **Overall Fit**: Would you forward this resume to a hiring manager for this role?
 
 Output STRICTLY as JSON:
@@ -106,7 +109,7 @@ Output STRICTLY as JSON:
   "skills_match": {{"score": N, "reason": "..."}},
   "relevance": {{"score": N, "reason": "..."}},
   "keyword_coverage": {{"score": N, "reason": "..."}},
-  "honesty_check": {{"score": N, "reason": "..."}},
+  "factual_grounding": {{"score": N, "reason": "..."}},
   "overall_fit": {{"score": N, "reason": "..."}}
 }}
 
@@ -175,7 +178,7 @@ def _call_model(model_config, prompt, api_key, api_base=None, timeout=60):
         scores = json.loads(content)
 
         # Validate all expected keys exist
-        expected = ["skills_match", "relevance", "keyword_coverage", "honesty_check", "overall_fit"]
+        expected = ["skills_match", "relevance", "keyword_coverage", "factual_grounding", "overall_fit"]
         for key in expected:
             if key not in scores or "score" not in scores[key]:
                 return {
@@ -209,7 +212,7 @@ def _call_model(model_config, prompt, api_key, api_base=None, timeout=60):
         }
 
 
-def evaluate_resume(resume_markdown, job_description, api_key=None):
+def evaluate_resume(resume_markdown, job_description, source_resume, api_key=None):
     """
     Run multi-model evaluation on a generated resume vs JD.
     
@@ -221,12 +224,20 @@ def evaluate_resume(resume_markdown, job_description, api_key=None):
     Args:
         resume_markdown: The generated resume content (markdown string)
         job_description: The original job description
+        source_resume: Canonical resume evidence used to check every factual claim
         api_key: OpenRouter API key (falls back to env var)
 
     Returns:
         dict with 'results' (per-model), 'aggregate' (averaged scores),
         'disagreements' (dimensions with high variance), 'confidence'
     """
+    if not source_resume.strip():
+        return {
+            "error": "Source resume evidence is required",
+            "results": [],
+            "aggregate": {},
+        }
+
     api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
     zai_key = os.getenv("ZAI_API_KEY", "")
     zen_key = os.getenv("ZEN_API_KEY", "")
@@ -247,9 +258,13 @@ def evaluate_resume(resume_markdown, job_description, api_key=None):
             "aggregate": {},
         }
 
+    # Limit evidence sharing and API traffic to the advertised judge count.
+    models = models[:TARGET_MODELS]
+
     prompt = EVAL_PROMPT.format(
         job_description=job_description[:3000],
         resume=resume_markdown[:3000],
+        source_resume=source_resume,
     )
 
     # Run all models in parallel
@@ -263,7 +278,7 @@ def evaluate_resume(resume_markdown, job_description, api_key=None):
             results.append(future.result())
 
     # Calculate aggregate scores (average across successful models)
-    dimensions = ["skills_match", "relevance", "keyword_coverage", "honesty_check", "overall_fit"]
+    dimensions = ["skills_match", "relevance", "keyword_coverage", "factual_grounding", "overall_fit"]
     successful = [r for r in results if "scores" in r]
     failed = [r for r in results if "error" in r]
 
@@ -330,7 +345,7 @@ def format_eval_report(eval_result):
             "skills_match": "🛠 Skills Match",
             "relevance": "🎯 Relevance",
             "keyword_coverage": "🔑 Keyword Coverage",
-            "honesty_check": "✅ Honesty Check",
+            "factual_grounding": "✅ Factual Grounding",
             "overall_fit": "📈 Overall Fit",
         }
 

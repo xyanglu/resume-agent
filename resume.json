@@ -1,86 +1,88 @@
 {
   "name": "Yang Lu",
   "contact": {
-    "location": "Markham, ON",
-    "email": "yang.lu.queens@gmail.com",
+    "location": "Greater Toronto Area, Canada",
+    "email": "",
     "linkedin": "linkedin.com/in/-yang-lu",
     "website": "xyanglu.github.io",
     "huggingface": "huggingface.co/xyanglu"
   },
-  "summary": "AI/ML Engineer with 7 years of software development experience. Built and deployed LLM-powered applications end-to-end: RAG pipelines with semantic search, multi-model evaluation toolkits, and agent frameworks (LangGraph, MCP). 10 open-source PRs to NousResearch/hermes-agent with verifiable public output. Combines production backend engineering (Java, Python, SQL) with applied AI systems. TN-eligible for US roles.",
+  "summary": "Software engineer and AI systems builder with approximately five years of professional development experience. Builds production AI applications using LLM APIs, retrieval systems, and agent frameworks. Fluent in English and Chinese (Mandarin), enabling bilingual AI system development for international education and cross-cultural markets.",
+  "capabilities": [
+    "Can build automated essay review and editing systems using LLM-based evaluation with customizable rubrics — covering structure, grammar, argument strength, and vocabulary. Supports admissions essays, personal statements, and supplemental question responses.",
+    "Can design and deploy RAG (retrieval-augmented generation) knowledge base systems that ground AI responses in source documents — admissions requirements, school-specific criteria, deadlines, and program details.",
+    "Can build automated document processing pipelines that parse transcripts, application forms, recommendation letters, and test score reports using LLM-based extraction and OCR.",
+    "Can create multi-agent workflow automation for application tracking, deadline management, document collection, and automated reminders via messaging platforms.",
+    "Can develop chatbots and Q&A systems for WeChat ecosystems with bilingual (Chinese/English) natural language interfaces.",
+    "Can implement MCP (Model Context Protocol) servers to connect AI agents to external APIs, databases, and tools for real-time data access.",
+    "Can build LLM evaluation and benchmarking infrastructure — hallucination detection, relevance scoring, and systematic quality testing across multiple AI model providers.",
+    "Can integrate with OpenAI, Anthropic, and other LLM provider APIs for function calling, tool use, and structured output parsing."
+  ],
   "experience": [
     {
       "title": "Independent AI Engineer — Open Source & R&D",
       "company": "AI Integration Solutions",
       "location": "Independent / Remote",
-      "dates": "09/2024 – Present",
+      "dates": "",
       "bullets": [
-        "Engineered a RAG chatbot with multi-step agentic reasoning, semantic search (vector DB embeddings), and an LLM-as-judge evaluation pipeline measuring relevance and latency across 3+ model providers; deployed to HuggingFace Spaces.",
+        "Built and deployed a LangChain RAG application with document ingestion, Hugging Face embeddings, Chroma vector retrieval, structured output enforcement, and source-grounded response verification — deployed to Hugging Face Spaces.",
         "Created open-source LLM evaluation toolkit with async parallel judging across multiple LLM providers, relevance scoring, and latency benchmarking — automated via GitHub Actions CI/CD with Docker.",
-        "Submitted 10 open-source PRs to NousResearch/hermes-agent: gateway dead-letter queues, 429 exponential backoff with reconnect replay, and CJK search tokenization.",
-        "Built vector search infrastructure using Chroma for semantic document retrieval and LLM memory in agentic RAG workflows — supporting JD-aware matching and contextual reranking.",
-        "Applied AI-accelerated engineering practices using Copilot, Claude, and IDE agents to speed design, implementation, testing, and refactoring — established prompt-to-code workflows with review discipline for secure, traceable changes."
+        "Submitted open-source PRs to NousResearch/hermes-agent: gateway dead-letter queues, exponential backoff with reconnect replay, and CJK search tokenization for Chinese/English mixed text.",
+        "Built vector search infrastructure using Chroma for semantic document retrieval in agentic RAG workflows.",
+        "Designed and deployed MCP servers exposing domain services as AI-consumable tools with authentication, observability, and error handling."
       ]
     },
     {
       "title": "Full-Stack Developer",
       "company": "EduTrigger",
       "location": "Toronto, ON",
-      "dates": "07/2023 – 07/2024",
+      "dates": "",
       "bullets": [
-        "Managed Open edX LMS deployment on Docker Compose, ensuring reliable platform uptime for education delivery.",
-        "Worked with existing PostgreSQL schema and data persistence in education tools, supporting student-facing workflows."
-      ]
-    },
-    {
-      "title": "Career Break",
-      "company": "",
-      "location": "",
-      "dates": "07/2020 – 07/2023",
-      "bullets": [
-        "Career pause following COVID-19 disruption; self-directed learning in full-stack development, Python, and modern software engineering fundamentals."
+        "Developed frontend features in NextJS, React, and TypeScript within an education technology platform.",
+        "Consumed REST APIs, worked with PostgreSQL schema, and deployed via Docker.",
+        "Built student-facing workflows in an education context — assessments, test imports, and template-driven content delivery."
       ]
     },
     {
       "title": "Back-End Developer",
       "company": "Alaia Technologies",
       "location": "Toronto, ON",
-      "dates": "07/2016 – 07/2020",
+      "dates": "",
       "bullets": [
-        "Built multithreaded Java batch pipelines processing 150K listings/day via cron, pushing to ElasticSearch with automated cleanup.",
-        "Improved photo download times by 50x by switching from FTP to REST; saved 1TB+ disk space with automated cleanup.",
-        "Led code reviews for junior engineers and wrote technical documentation."
+        "Extended Java batch loaders using Spring Boot + Hibernate to process large volumes of listing data daily into MySQL + ElasticSearch.",
+        "Modified existing Spring REST endpoints and integrated external data sources via REST APIs.",
+        "Performed code reviews for junior engineers and maintained technical documentation."
       ]
     }
   ],
   "projects": [
     {
-      "title": "AI Agent Infrastructure and Reliability",
+      "title": "LangChain RAG Application",
+      "subtitle": "Python, LangChain, Chroma, Hugging Face Embeddings, Hugging Face Spaces",
+      "bullets": [
+        "Production RAG application that ingests documents, generates embeddings, retrieves relevant context via vector search, and produces source-grounded answers with a verification layer to prevent hallucinations. Deployed and publicly accessible."
+      ]
+    },
+    {
+      "title": "LLM Evaluation Toolkit",
+      "subtitle": "Python, asyncio, Docker, GitHub Actions CI/CD",
+      "bullets": [
+        "Open-source multi-model LLM evaluation framework — async parallel scoring with LLM-as-judge relevance assessment, hallucination detection, and latency benchmarking across multiple AI providers."
+      ]
+    },
+    {
+      "title": "AI Agent Infrastructure Contributions",
       "subtitle": "Python, Hermes Agent Framework (NousResearch)",
       "bullets": [
-        "Submitted 10 open-source PRs to NousResearch/hermes-agent: gateway dead-letter queues, 429 exponential backoff with reconnect replay, and CJK search tokenization."
-      ]
-    },
-    {
-      "title": "RAG Agent with LangGraph and MCP",
-      "subtitle": "LangChain, LangGraph, Chroma, HuggingFace Spaces",
-      "bullets": [
-        "Built a JD-aware RAG system with custom job-link routing (?j=HASH params), semantic search over stored JDs, and match scoring — deployed to HuggingFace Spaces and Streamlit Cloud (github.com/xyanglu/resume-agent)."
-      ]
-    },
-    {
-      "title": "LLM Eval Toolkit",
-      "subtitle": "Python, httpx/asyncio, OpenRouter API",
-      "bullets": [
-        "Open-source multi-model LLM evaluation toolkit — async parallel scoring with LLM-as-judge relevance assessment and latency metrics (github.com/xyanglu/llm-eval-toolkit)."
+        "Production reliability improvements to an open-source AI agent framework — dead-letter queues for failed messages, exponential backoff for rate limiting, and CJK tokenization for Chinese/English text search."
       ]
     }
   ],
   "education": [
     {
       "school": "Queen's University",
-      "degree": "Bachelor of Computing – Teradata Scholarship | Certifications: HuggingFace MCP (10/2025), DeepLearning.ai Data Engineering (06/2025)",
-      "dates": "2016"
+      "degree": "Bachelor of Computing — Teradata Scholarship",
+      "dates": ""
     }
   ],
   "skills": [
@@ -88,17 +90,16 @@
       "category": "Machine Learning & AI",
       "items": [
         "LangChain",
-        "LangGraph",
         "RAG",
-        "LLMs",
-        "embeddings",
-        "vector DBs (Chroma)",
-        "MCP",
-        "LLM-as-judge evaluation",
+        "MCP (Model Context Protocol)",
+        "LLM agents",
+        "multi-agent orchestration",
         "prompt engineering",
-        "OpenRouter API",
-        "Z.AI API",
-        "model evaluation"
+        "LLM-as-judge evaluation",
+        "embeddings",
+        "vector databases (Chroma)",
+        "hallucination detection",
+        "observability and tracing"
       ]
     },
     {
@@ -107,11 +108,11 @@
         "Python",
         "FastAPI",
         "Java",
-        "Spring",
+        "Spring Boot",
         "TypeScript",
-        "React",
         "NextJS",
-        "GraphQL",
+        "React",
+        "REST APIs",
         "SQL",
         "PostgreSQL"
       ]
@@ -121,13 +122,22 @@
       "items": [
         "Docker",
         "GitHub Actions CI/CD",
-        "HuggingFace Spaces deployment",
+        "Hugging Face Spaces deployment",
         "Linux/macOS server administration"
       ]
     }
   ],
+  "bilingual": {
+    "languages": ["English (fluent)", "Chinese/Mandarin (conversational)"],
+    "applications": [
+      "Bilingual AI system development — Chinese-language interfaces with English-language document processing",
+      "Direct communication with Chinese-speaking clients, partners, and families",
+      "Understanding of Chinese education system context and international study pathways",
+      "Cultural fluency in both North American and Chinese education consulting markets"
+    ]
+  },
   "certifications": [
-    "HuggingFace MCP (10/2025)",
-    "DeepLearning.ai Data Engineering (06/2025)"
+    "HuggingFace MCP Certification",
+    "DeepLearning.ai Data Engineering"
   ]
 }

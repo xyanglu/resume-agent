@@ -1,14 +1,10 @@
 streamlit
-streamlit-analytics>=0.4.1
 langchain
 langchain-community
 langchain-openai
-langchain-google-genai
-langchain-classic
+langchain-text-splitters
 chromadb
 sentence-transformers
-google-api-python-client
-google-auth
 requests
 weasyprint
 markdown
