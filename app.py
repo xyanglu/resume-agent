@@ -527,7 +527,7 @@ with st.sidebar:
 **ℹ️ About**
 
 This app uses:
-- 📄 Google Docs API
+- 📄 A structured resume data source
 - 🔢 Vector embeddings
 - 🤖 Z.AI / OpenRouter model providers
 - ✅ Source-grounded second-pass verification
@@ -540,7 +540,7 @@ st.title("📄 RAG Resume Chatbot")
 st.markdown(
     """
 This chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about your resume.
-It loads your resume from Google Docs, creates embeddings, and checks each draft answer against the source resume before displaying it.
+It loads a structured `resume.json` source, creates embeddings, and checks each draft answer against that source before displaying it.
 
 👈 Check the **sidebar** (☰ menu at top-left) for **PDF generation tools**!
 """
