@@ -15,6 +15,7 @@
     "Can create multi-agent workflow automation for application tracking, deadline management, document collection, and automated reminders via messaging platforms.",
     "Can develop chatbots and Q&A systems for WeChat ecosystems with bilingual (Chinese/English) natural language interfaces.",
     "Can implement MCP (Model Context Protocol) servers to connect AI agents to external APIs, databases, and tools for real-time data access.",
+    "Can build LangGraph-based agent orchestration pipelines (StateGraph, typed state, conditional edges) that take a job description URL and produce a tailored one-page resume plus a five-dimension LLM-as-judge evaluation report — extensible to messaging platforms and other delivery channels.",
     "Can build LLM evaluation and benchmarking infrastructure — hallucination detection, relevance scoring, and systematic quality testing across multiple AI model providers.",
     "Can integrate with OpenAI, Anthropic, and other LLM provider APIs for function calling, tool use, and structured output parsing."
   ],
@@ -57,6 +58,13 @@
   ],
   "projects": [
     {
+      "title": "LangGraph Resume Tailoring Agent",
+      "subtitle": "Python, LangGraph StateGraph, LangChain, LLM-as-judge",
+      "bullets": [
+        "LangGraph agent (StateGraph, typed state, conditional edges) that fetches a job description from a URL, generates a tailored one-page resume, auto-tightens through progressive constraints until it fits one page, and evaluates fit across five dimensions with LLM-as-judge scoring. Architecture is delivery-channel agnostic — CLI today, extensible to messaging platforms."
+      ]
+    },
+    {
       "title": "LangChain RAG Application",
       "subtitle": "Python, LangChain, Chroma, Hugging Face Embeddings, Hugging Face Spaces",
       "bullets": [
@@ -90,9 +98,12 @@
       "category": "Machine Learning & AI",
       "items": [
         "LangChain",
+        "LangGraph",
         "RAG",
         "MCP (Model Context Protocol)",
         "LLM agents",
+        "agent orchestration (StateGraph, conditional edges)",
+        "tool calling",
         "multi-agent orchestration",
         "prompt engineering",
         "LLM-as-judge evaluation",
