@@ -196,8 +196,26 @@ def extract_dates(resume_context):
     return list(set(dates_found))
 
 
+def _count_pdf_pages(pdf_bytes):
+    """Return the number of pages in a PDF (bytes)."""
+    if not PYMUPDF_AVAILABLE:
+        return None
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        count = doc.page_count
+        doc.close()
+        return count
+    except Exception:
+        return None
+
+
 def generate_resume_pdf(job_description, company_name):
-    """Generate a tailored resume PDF based on job description."""
+    """Generate a tailored resume PDF based on job description.
+    
+    After generating the PDF, checks if it exceeds 1 page. If so, automatically
+    re-generates with progressively tighter constraints (fewer bullets, smaller
+    font, tighter margins) until it fits on a single page.
+    """
     docs = st.session_state.vectorstore.similarity_search(
         "education skills experience work history qualifications",
         k=15,
@@ -219,69 +237,87 @@ def generate_resume_pdf(job_description, company_name):
         candidate_name = " ".join(candidate_name.split()[:2])
     candidate_name = candidate_name.replace("#", "").replace("*", "").strip()
 
-    prompt = f"""
-    Create a professional 1-page resume for {company_name if company_name else "this company"}.
+    # Progressive tightening levels — tried in order until 1 page is achieved
+    tighten_levels = [
+        {"bullets": "3-4", "summary": "2-3", "max_chars": 3000, "font_size": "9pt", "css_adjust": ""},
+        {"bullets": "3", "summary": "2", "max_chars": 2700, "font_size": "9pt", "css_adjust": ""},
+        {"bullets": "2-3", "summary": "2", "max_chars": 2400, "font_size": "8.5pt", "css_adjust": "tight"},
+        {"bullets": "2", "summary": "2", "max_chars": 2100, "font_size": "8pt", "css_adjust": "tight"},
+    ]
 
-    CANDIDATE NAME: {candidate_name}
-    USE THIS EXACT NAME AT THE TOP
+    for level_idx, level in enumerate(tighten_levels):
+        prompt = f"""
+        Create a professional 1-page resume for {company_name if company_name else "this company"}.
 
-    Resume Context:
-    {resume_context}
+        CANDIDATE NAME: {candidate_name}
+        USE THIS EXACT NAME AT THE TOP
 
-    Job Description:
-    {job_description}
+        Resume Context:
+        {resume_context}
 
-    REQUIREMENTS:
-    1. Start with: # {{candidate_name}}
-    2. Summary: 2-3 sentences highlighting fit for this specific role
-    3. Skills: group by category (Languages, Frameworks, Tools, Cloud), keep only skills relevant to the JD
-    4. Experience: up to 3 most relevant positions, 2-3 bullets each starting with strong action verbs
-    5. Education: 1-2 lines
-    6. TOTAL LIMIT: Under 3000 characters
-    7. No filler words (leverage, utilize, synergize, streamline, facilitate)
-    8. Use standard ATS-friendly format with clear section headers
-    9. Be honest - only include real experience from the resume context
+        Job Description:
+        {job_description}
 
-    OUTPUT FORMAT (Markdown):
-    # {candidate_name}
-    [Contact info line]
+        REQUIREMENTS:
+        1. Start with: # {{candidate_name}}
+        2. Summary: {level['summary']} sentences highlighting fit for this specific role
+        3. Skills: group by category (Languages, Frameworks, Tools, Cloud), keep only skills relevant to the JD
+        4. Experience: up to 3 most relevant positions, {level['bullets']} bullets each starting with strong action verbs
+        5. Education: 1-2 lines
+        6. TOTAL LIMIT: Under {level['max_chars']} characters
+        7. No filler words (leverage, utilize, synergize, streamline, facilitate)
+        8. Use standard ATS-friendly format with clear section headers
+        9. Be honest - only include real experience from the resume context
+        10. Every bullet must be concise - prefer shorter bullets with concrete metrics over verbose descriptions
 
-    ## Summary
-    [2-3 sentences]
+        OUTPUT FORMAT (Markdown):
+        # {candidate_name}
+        [Contact info line]
 
-    ## Skills
-    - **Languages**: [list]
-    - **Frameworks**: [list]
-    - **Tools**: [list]
+        ## Summary
+        [{level['summary']} sentences]
 
-    ## Experience
-    ### [Position]
-    **[Company]** | [Dates]
-    - [Action verb] [specific achievement with metrics if available]
-    - [Action verb] [specific achievement]
+        ## Skills
+        - **Languages**: [list]
+        - **Frameworks**: [list]
+        - **Tools**: [list]
 
-    ## Education
-    [Degree] from [School]
+        ## Experience
+        ### [Position]
+        **[Company]** | [Dates]
+        - [Action verb] [specific achievement with metrics if available]
+        - [Action verb] [specific achievement]
 
-    ## Certifications
-    [If any relevant]
-    """
+        ## Education
+        [Degree] from [School]
 
-    dates_in_resume = extract_dates(resume_context)
-    if dates_in_resume:
-        prompt += f"\nDATES: {', '.join(dates_in_resume[:3])}"
+        ## Certifications
+        [If any relevant]
+        """
 
-    response = llm.invoke(prompt)
-    resume_markdown = response.content.strip()
+        dates_in_resume = extract_dates(resume_context)
+        if dates_in_resume:
+            prompt += f"\nDATES: {', '.join(dates_in_resume[:3])}"
 
-    if not resume_markdown.startswith("#"):
-        resume_markdown = f"# {candidate_name}\n\n{resume_markdown}"
+        response = llm.invoke(prompt)
+        resume_markdown = response.content.strip()
 
-    if len(resume_markdown) > 3000:
-        resume_markdown = resume_markdown[:3000]
+        if not resume_markdown.startswith("#"):
+            resume_markdown = f"# {candidate_name}\n\n{resume_markdown}"
 
-    html_content = markdown_to_html(resume_markdown, "resume")
-    pdf_bytes = HTML(string=html_content).write_pdf()
+        if len(resume_markdown) > level['max_chars']:
+            resume_markdown = resume_markdown[:level['max_chars']]
+
+        html_content = markdown_to_html(resume_markdown, "resume", level['css_adjust'])
+        pdf_bytes = HTML(string=html_content).write_pdf()
+
+        # Check page count
+        page_count = _count_pdf_pages(pdf_bytes)
+        if page_count is not None and page_count <= 1:
+            return pdf_bytes, resume_markdown
+        elif level_idx == len(tighten_levels) - 1:
+            # Last level - return best effort
+            return pdf_bytes, resume_markdown
 
     return pdf_bytes, resume_markdown
 
@@ -338,36 +374,55 @@ def generate_cover_letter_pdf(job_description, company_name):
     return pdf_bytes
 
 
-def markdown_to_html(markdown_content, doc_type):
+def markdown_to_html(markdown_content, doc_type, css_adjust=""):
     """Convert markdown to HTML with styling."""
     if doc_type == "resume":
+        if css_adjust == "tight":
+            body_style = """
+                font-family: 'Arial', sans-serif; 
+                max-width: 700px; 
+                margin: 0 auto; 
+                padding: 15px 25px;
+                font-size: 8.5pt; 
+                line-height: 1.15;
+            """
+            h1_style = "font-size: 13pt; margin-bottom: 8px;"
+            h2_style = "margin-top: 8px; margin-bottom: 3px;"
+            li_style = "margin-bottom: 1px; font-size: 8.5pt;"
+        else:
+            body_style = """
+                font-family: 'Arial', sans-serif; 
+                max-width: 700px; 
+                margin: 0 auto; 
+                padding: 20px 30px;
+                font-size: 9pt;
+                line-height: 1.2;
+            """
+            h1_style = "margin-bottom: 10px;"
+            h2_style = "margin-top: 12px; margin-bottom: 5px;"
+            li_style = "margin-bottom: 2px; font-size: 9pt;"
+
         template = """
         <html>
         <head>
             <style>
                 body {{ 
-                    font-family: 'Arial', sans-serif; 
-                    max-width: 700px; 
-                    margin: 0 auto; 
-                    padding: 20px 30px;
-                    font-size: 9pt;
-                    line-height: 1.2;
+                    {body}
                 }}
                 h1 {{ 
                     color: #2c3e50; 
                     font-size: 14pt;
+                    {h1} 
                     font-weight: bold;
                     border-bottom: 2px solid #3498db; 
                     padding-bottom: 5px;
-                    margin-bottom: 10px;
                 }}
                 h2 {{ 
                     color: #2c3e50; 
                     font-size: 10pt;
                     font-weight: bold;
                     text-transform: uppercase;
-                    margin-top: 12px;
-                    margin-bottom: 5px;
+                    {h2}
                 }}
                 h3 {{ 
                     color: #34495e; 
@@ -386,8 +441,7 @@ def markdown_to_html(markdown_content, doc_type):
                     padding-left: 15px;
                 }}
                 li {{ 
-                    margin-bottom: 2px;
-                    font-size: 9pt;
+                    {li}
                 }}
                 strong {{
                     font-weight: 600;
@@ -399,6 +453,8 @@ def markdown_to_html(markdown_content, doc_type):
         </body>
         </html>
         """
+        html = markdown.markdown(markdown_content)
+        return template.format(content=html, body=body_style, h1=h1_style, h2=h2_style, li=li_style)
     else:  # cover_letter
         template = """
         <html>
@@ -420,9 +476,8 @@ def markdown_to_html(markdown_content, doc_type):
         </body>
         </html>
         """
-
-    html = markdown.markdown(markdown_content)
-    return template.format(content=html)
+        html = markdown.markdown(markdown_content)
+        return template.format(content=html)
 
 
 # Sidebar - PDF Generation
