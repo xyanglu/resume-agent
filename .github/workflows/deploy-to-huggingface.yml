@@ -32,11 +32,7 @@ jobs:
           if [ -d ".streamlit" ]; then
             cp -r .streamlit hf_space/
           fi
-          # LangGraph agent module (CLI + importable package)
-          cp -r langgraph_agent hf_space/langgraph_agent
-          # Add langgraph to requirements for HF Space
-          echo "langgraph" >> hf_space/requirements.txt
-      
+                                              
       - name: Commit and push to HuggingFace
         run: |
           cd hf_space
