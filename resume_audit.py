@@ -37,7 +37,7 @@ RESUME:
 
 IMPORTANT CONTEXT:
 - Today is {today}. Certifications dated before this year are NOT future-dated.
-- If the skills list looks truncated at the end, it is a display artifact, not a real resume issue. The full skills list includes LangGraph, MCP, agent evaluation, prompt engineering, Anthropic API.
+- If the skills list looks truncated at the end, it is a display artifact, not a real resume issue. The full skills list includes RAG, agent evaluation, prompt engineering, LLM APIs.
 
 For each issue you find, output JSON with:
 - "issue": short description
