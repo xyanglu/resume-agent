@@ -1,21 +1,19 @@
 {
   "name": "Yang Lu",
   "contact": {
-    "location": "Greater Toronto Area, Canada",
+    "location": "New York, NY, USA",
     "email": "",
     "linkedin": "linkedin.com/in/-yang-lu",
     "website": "xyanglu.github.io",
     "huggingface": "huggingface.co/xyanglu"
   },
-  "summary": "Software engineer and AI systems builder with approximately five years of professional development experience. Builds production AI applications using LLM APIs, retrieval systems, and agent frameworks. Fluent in English and Chinese (Mandarin), enabling bilingual AI system development for international education and cross-cultural markets.",
+  "summary": "Software engineer and AI systems builder with approximately five years of professional development experience. Builds AI applications using LLM APIs and retrieval systems. Fluent in English and Chinese (Mandarin), enabling bilingual AI system development for international education and cross-cultural markets.",
   "capabilities": [
     "Can build automated essay review and editing systems using LLM-based evaluation with customizable rubrics — covering structure, grammar, argument strength, and vocabulary. Supports admissions essays, personal statements, and supplemental question responses.",
     "Can design and deploy RAG (retrieval-augmented generation) knowledge base systems that ground AI responses in source documents — admissions requirements, school-specific criteria, deadlines, and program details.",
     "Can build automated document processing pipelines that parse transcripts, application forms, recommendation letters, and test score reports using LLM-based extraction and OCR.",
     "Can create multi-agent workflow automation for application tracking, deadline management, document collection, and automated reminders via messaging platforms.",
     "Can develop chatbots and Q&A systems for WeChat ecosystems with bilingual (Chinese/English) natural language interfaces.",
-    "Can implement MCP (Model Context Protocol) servers to connect AI agents to external APIs, databases, and tools for real-time data access.",
-    "Can build LangGraph-based agent orchestration pipelines (StateGraph, typed state, conditional edges) that take a job description URL and produce a tailored one-page resume plus a five-dimension LLM-as-judge evaluation report — extensible to messaging platforms and other delivery channels.",
     "Can build LLM evaluation and benchmarking infrastructure — hallucination detection, relevance scoring, and systematic quality testing across multiple AI model providers.",
     "Can integrate with OpenAI, Anthropic, and other LLM provider APIs for function calling, tool use, and structured output parsing."
   ],
@@ -27,10 +25,9 @@
       "dates": "",
       "bullets": [
         "Built and deployed a LangChain RAG application with document ingestion, Hugging Face embeddings, Chroma vector retrieval, structured output enforcement, and source-grounded response verification — deployed to Hugging Face Spaces.",
-        "Created open-source LLM evaluation toolkit with async parallel judging across multiple LLM providers, relevance scoring, and latency benchmarking — automated via GitHub Actions CI/CD with Docker.",
+        "Created open-source LLM evaluation toolkit with async parallel judging across multiple LLM providers, relevance scoring, and latency benchmarking, with JSON reports designed to plug into CI.",
         "Submitted open-source PRs to NousResearch/hermes-agent: gateway dead-letter queues, exponential backoff with reconnect replay, and CJK search tokenization for Chinese/English mixed text.",
-        "Built vector search infrastructure using Chroma for semantic document retrieval in agentic RAG workflows.",
-        "Designed and deployed MCP servers exposing domain services as AI-consumable tools with authentication, observability, and error handling."
+        "Built vector search infrastructure using Chroma for semantic document retrieval in agentic RAG workflows."
       ]
     },
     {
@@ -58,13 +55,6 @@
   ],
   "projects": [
     {
-      "title": "LangGraph Resume Tailoring Agent",
-      "subtitle": "Python, LangGraph StateGraph, LangChain, LLM-as-judge",
-      "bullets": [
-        "LangGraph agent (StateGraph, typed state, conditional edges) that fetches a job description from a URL, generates a tailored one-page resume, auto-tightens through progressive constraints until it fits one page, and evaluates fit across five dimensions with LLM-as-judge scoring. Architecture is delivery-channel agnostic — CLI today, extensible to messaging platforms."
-      ]
-    },
-    {
       "title": "LangChain RAG Application",
       "subtitle": "Python, LangChain, Chroma, Hugging Face Embeddings, Hugging Face Spaces",
       "bullets": [
@@ -73,9 +63,9 @@
     },
     {
       "title": "LLM Evaluation Toolkit",
-      "subtitle": "Python, asyncio, Docker, GitHub Actions CI/CD",
+      "subtitle": "Python, asyncio, LLM-as-judge",
       "bullets": [
-        "Open-source multi-model LLM evaluation framework — async parallel scoring with LLM-as-judge relevance assessment, hallucination detection, and latency benchmarking across multiple AI providers."
+        "Open-source multi-model LLM evaluation framework — async parallel scoring with LLM-as-judge relevance assessment and hallucination detection across multiple AI providers."
       ]
     },
     {
@@ -98,13 +88,8 @@
       "category": "Machine Learning & AI",
       "items": [
         "LangChain",
-        "LangGraph",
         "RAG",
-        "MCP (Model Context Protocol)",
         "LLM agents",
-        "agent orchestration (StateGraph, conditional edges)",
-        "tool calling",
-        "multi-agent orchestration",
         "prompt engineering",
         "LLM-as-judge evaluation",
         "embeddings",
@@ -132,14 +117,16 @@
       "category": "DevOps and Infrastructure",
       "items": [
         "Docker",
-        "GitHub Actions CI/CD",
         "Hugging Face Spaces deployment",
         "Linux/macOS server administration"
       ]
     }
   ],
   "bilingual": {
-    "languages": ["English (fluent)", "Chinese/Mandarin (conversational)"],
+    "languages": [
+      "English (fluent)",
+      "Chinese/Mandarin (conversational)"
+    ],
     "applications": [
       "Bilingual AI system development — Chinese-language interfaces with English-language document processing",
       "Direct communication with Chinese-speaking clients, partners, and families",
