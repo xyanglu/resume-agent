@@ -12,7 +12,6 @@
     "Can build automated essay review and editing systems using LLM-based evaluation with customizable rubrics — covering structure, grammar, argument strength, and vocabulary. Supports admissions essays, personal statements, and supplemental question responses.",
     "Can design and deploy RAG (retrieval-augmented generation) knowledge base systems that ground AI responses in source documents — admissions requirements, school-specific criteria, deadlines, and program details.",
     "Can build automated document processing pipelines that parse transcripts, application forms, recommendation letters, and test score reports using LLM-based extraction and OCR.",
-    "Can create multi-agent workflow automation for application tracking, deadline management, document collection, and automated reminders via messaging platforms.",
     "Can develop chatbots and Q&A systems for WeChat ecosystems with bilingual (Chinese/English) natural language interfaces.",
     "Can build LLM evaluation and benchmarking infrastructure — hallucination detection, relevance scoring, and systematic quality testing across multiple AI model providers.",
     "Can integrate with OpenAI, Anthropic, and other LLM provider APIs for function calling, tool use, and structured output parsing."
