@@ -28,7 +28,7 @@ Instead of treating a resume as a static PDF, this project makes the resume quer
 Example questions:
 
 - What AI systems has this candidate built?
-- Where has he used LangGraph, RAG, or vector search?
+- Where has he used RAG or vector search?
 - How does his backend engineering experience connect to AI engineering?
 - What should be emphasized for this role?
 
@@ -37,7 +37,6 @@ Example questions:
 - Python
 - Streamlit
 - LangChain
-- LangGraph patterns
 - Chroma vector search
 - OpenRouter / Z.AI model providers
 - Hugging Face Spaces
