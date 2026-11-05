@@ -95,10 +95,10 @@
     },
     {
       "title": "Resume Agent (public chat agent over my own resume)",
-      "subtitle": "Streamlit, LangChain, Chroma, OpenRouter, Hugging Face Spaces",
+      "subtitle": "Streamlit, LangChain, Chroma, OpenRouter, Cloudflare Tunnel",
       "bullets": [
         "Public chat agent that answers questions about my experience from a structured source: Chroma retrieval over the resume, with a response verifier that grounds each answer before it is shown.",
-        "Instrumented with event-level analytics (session, event type, verification status) and guarded by a per-session query cap."
+        "Served from my own machine through a Cloudflare Tunnel at yangresume.work, with per-minute uptime probes across the stack and event-level analytics (session, event type, verification status) plus a per-session query cap."
       ]
     }
   ],
@@ -159,5 +159,9 @@
   "certifications": [
     "HuggingFace MCP Certification (10/2025)",
     "DeepLearning.ai Data Engineering (06/2025)"
-  ]
+  ],
+  "languages": {
+    "English": "Fluent (professional working language)",
+    "Mandarin Chinese": "Conversational spoken only; does not write Chinese; client documents in Chinese would need a bilingual colleague"
+  }
 }

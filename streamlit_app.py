@@ -84,6 +84,16 @@ def load_resume_from_json(path=None):
                 return _format_resume_text(json.load(f))
         except (FileNotFoundError, json.JSONDecodeError):
             return None
+    # Order matters: the checkout is the source of truth, ~/Documents/interview-prep is a
+    # symlink to it (kept for the eval-prep scripts), and the GitHub copy is only a last
+    # resort because raw.githubusercontent lags a push by minutes and once served a stale
+    # resume (wrong location, blank email, no dates) to every visitor.
+    for p in [LOCAL_RESUME_JSON, RESUME_JSON_PATH]:
+        try:
+            with open(p) as f:
+                return _format_resume_text(json.load(f))
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
     try:
         import urllib.request
         resp = urllib.request.urlopen(GITHUB_RESUME_URL, timeout=10)
@@ -92,12 +102,6 @@ def load_resume_from_json(path=None):
             return _format_resume_text(data)
     except Exception:
         pass
-    for p in [RESUME_JSON_PATH, LOCAL_RESUME_JSON]:
-        try:
-            with open(p) as f:
-                return _format_resume_text(json.load(f))
-        except (FileNotFoundError, json.JSONDecodeError):
-            continue
     return None
 
 def _format_resume_text(data):

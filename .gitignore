@@ -2,3 +2,6 @@
 *.json
 __pycache__/
 .pytest_cache/
+*.bak-*
+*.archived-*
+*bak_2026*
