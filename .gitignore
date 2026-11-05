@@ -5,3 +5,4 @@ __pycache__/
 *.bak-*
 *.archived-*
 *bak_2026*
+.streamlit/secrets.toml
