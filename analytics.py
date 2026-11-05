@@ -67,9 +67,17 @@ def _get_duration(st):
         return ""
 
 
+DEFAULT_LOCAL_LOG = os.path.expanduser("~/Library/Logs/resume-agent/analytics.jsonl")
+
+
 def _write_local(row):
-    log_path = LOCAL_LOG or "/tmp/resume_agent_analytics.jsonl"
+    """Append one JSON line to a durable log.
+
+    The old default was /tmp, which macOS prunes, so event history silently vanished.
+    """
+    log_path = LOCAL_LOG or DEFAULT_LOCAL_LOG
     try:
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
         with open(log_path, "a") as f:
             f.write(json.dumps(row) + "\n")
     except Exception:

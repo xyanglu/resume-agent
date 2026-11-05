@@ -11,8 +11,6 @@ import hashlib
 from pathlib import Path
 from datetime import datetime
 
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
@@ -61,7 +59,6 @@ DARK_CSS = """
 st.markdown(DARK_CSS, unsafe_allow_html=True)
 
 MAX_QUERIES = 5
-RESUME_SOURCE_URL_ENV = "RESUME_URL"
 OWNER_HASH = "d4c5627c"
 
 def parse_jd_text(raw_text):
@@ -162,38 +159,6 @@ def get_llm(temperature=0.7):
         raise RuntimeError("OPENROUTER_API_KEY is not configured")
     model = get_secret("MODEL_NAME") or DEFAULT_MODEL
     return ChatOpenAI(model=model, api_key=api_key, base_url=OPENROUTER_BASE_URL, temperature=temperature)
-
-def extract_text_from_doc(doc):
-    text_parts = []
-    for element in doc.get("body", {}).get("content", []):
-        if "paragraph" in element:
-            for elem in element["paragraph"].get("elements", []):
-                if "textRun" in elem:
-                    text_parts.append(elem["textRun"]["content"])
-        elif "table" in element:
-            for row in element["table"].get("tableRows", []):
-                for cell in row.get("tableCells", []):
-                    for celem in cell.get("content", []):
-                        if "paragraph" in celem:
-                            for pelem in celem["paragraph"].get("elements", []):
-                                if "textRun" in pelem:
-                                    text_parts.append(pelem["textRun"]["content"])
-    return "".join(text_parts)
-
-def fetch_google_doc(url):
-    match = re.search(r"/document/d/([a-zA-Z0-9-_]+)", url)
-    if not match:
-        raise ValueError("Invalid Google Doc URL")
-    doc_id = match.group(1)
-    sa_path = get_secret("service_account_path")
-    if sa_path:
-        creds = service_account.Credentials.from_service_account_file(sa_path, scopes=["https://www.googleapis.com/auth/documents.readonly"])
-    else:
-        creds_dict = dict(st.secrets["service_account_json"])
-        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=["https://www.googleapis.com/auth/documents.readonly"])
-    service = build("docs", "v1", credentials=creds)
-    doc = service.documents().get(documentId=doc_id).execute()
-    return extract_text_from_doc(doc)
 
 @st.cache_resource
 def get_embeddings():
@@ -324,26 +289,13 @@ def main():
                 from resume_audit import audit_recruiter_risks
                 st.session_state.risk_flags = audit_recruiter_risks(resume_text)
         else:
-            resume_url = get_secret(RESUME_SOURCE_URL_ENV, "")
-            if resume_url:
-                try:
-                    with st.spinner("Loading resume from Google Docs..."):
-                        resume_text = fetch_google_doc(resume_url)
-                    st.session_state.resume_text = resume_text
-                    st.session_state.vs, st.session_state.chunks = build_vector_store(resume_text)
-                    st.session_state.resume_loaded = True
-                    st.session_state.resume_source = "google_doc"
-                except Exception as e:
-                    st.error(f"Could not load resume: {e}")
-                    st.session_state.resume_text = ""
-                    st.session_state.vs = None
-                    st.session_state.chunks = []
-                    st.session_state.resume_loaded = True
-            else:
-                st.session_state.resume_text = ""
-                st.session_state.vs = None
-                st.session_state.chunks = []
-                st.session_state.resume_loaded = True
+            # No resume source found. resume.json is the source of truth; the GitHub raw copy in
+            # load_resume_from_json() is the only fallback. The Google Docs path was removed along
+            # with the service-account key it depended on.
+            st.session_state.resume_text = ""
+            st.session_state.vs = None
+            st.session_state.chunks = []
+            st.session_state.resume_loaded = True
 
     # Detect ?j= param
     jd_entry = None
