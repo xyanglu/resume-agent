@@ -148,11 +148,20 @@ def get_secret(key, default=None):
     except (KeyError, AttributeError):
         return os.getenv(key, default)
 
+DEFAULT_MODEL = "deepseek/deepseek-chat-v3.1"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
 def get_llm(temperature=0.7):
-    zai_key = get_secret("ZAI_API_KEY") or os.getenv("ZAI_API_KEY")
-    if zai_key:
-        return ChatOpenAI(model="glm-4.7-flash", api_key=zai_key, base_url="https://api.zai.chat/v1", temperature=temperature)
-    return ChatOpenAI(model="openrouter/free", api_key=get_secret("OPENROUTER_API_KEY"), base_url="https://openrouter.ai/api/v1", temperature=temperature)
+    """OpenRouter is the only provider wired up.
+
+    The previous default pointed at api.zai.chat, which no longer resolves in DNS, so every
+    visitor's question failed before authentication. MODEL_NAME overrides the model id.
+    """
+    api_key = get_secret("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY is not configured")
+    model = get_secret("MODEL_NAME") or DEFAULT_MODEL
+    return ChatOpenAI(model=model, api_key=api_key, base_url=OPENROUTER_BASE_URL, temperature=temperature)
 
 def extract_text_from_doc(doc):
     text_parts = []

@@ -64,21 +64,12 @@ def get_llm(temperature=0.1):
     )
     if openrouter_key:
         return ChatOpenAI(
-            model="openrouter/free",
+            model="deepseek/deepseek-chat-v3.1",
             api_key=openrouter_key,
             base_url="https://openrouter.ai/api/v1",
             temperature=temperature,
         )
 
-    zai_key = st.secrets.get("ZAI_API_KEY", os.getenv("ZAI_API_KEY"))
-    if zai_key:
-        return ChatOpenAI(
-            model="glm-4.7-flash",
-            api_key=zai_key,
-            base_url="https://api.zai.chat/v1",
-            temperature=temperature,
-            extra_body={"thinking": {"type": "disabled"}},
-        )
     raise RuntimeError("No supported model-provider API key is configured")
 
 
