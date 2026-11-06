@@ -624,13 +624,12 @@ def main():
             st.markdown(user_input)
         vs = getattr(st.session_state, "vs", None)
         chunks = getattr(st.session_state, "chunks", [])
-        context = retrieve_context(vs, chunks, user_input)
-        # A JD comparison is an absence question ("what is he missing?"). Four retrieved
-        # chunks are about a third of the resume, so the model answered "not listed" about
-        # skills that were sitting in chunks it never saw. The whole resume is ~6k chars,
-        # cheap enough to send in full whenever a JD is loaded.
-        if jd_entry and st.session_state.get("resume_text"):
-            context = st.session_state["resume_text"]
+        # The resume is ~6k chars (12 chunks). Retrieving 4 of them was pure loss: every
+        # question is about the whole document, and any chunk left out could be the one that
+        # answers it. Send the resume whole; retrieval is the fallback only when no resume
+        # text is loaded.
+        _resume = st.session_state.get("resume_text") or ""
+        context = _resume or retrieve_context(vs, chunks, user_input)
         flags = st.session_state.get("risk_flags", [])
         if flags:
             risk_notes = "Items flagged:"

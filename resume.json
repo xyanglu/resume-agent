@@ -128,7 +128,8 @@
         "embeddings",
         "vector databases (Chroma)",
         "hallucination detection",
-        "observability and tracing"
+        "observability and tracing",
+        "AI coding assistants (Claude Code, Codex, Copilot, Hermes agents)"
       ]
     },
     {
