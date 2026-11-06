@@ -1,13 +1,14 @@
 name: CI
 
+# Every push, every branch: a push that skips the eval is how a broken build reaches
+# the live app at yangresume.work.
 on:
   push:
-    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  test:
+  eval:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,8 +23,13 @@ jobs:
       - name: Syntax check every module
         run: python -m compileall -q .
 
-      - name: Unit tests
-        run: python -m pytest tests/test_response_verifier.py tests/test_resume_eval.py -q
+      # Fails if a test file on disk is not actually run below, so the suite cannot
+      # silently shrink. Declared local-only files live in tools/check_test_coverage.py.
+      - name: Every test file is wired in
+        run: python tools/check_test_coverage.py
+
+      - name: Eval suite (fast)
+        run: python -m pytest tests -q --ignore=tests/test_app_smoke.py
 
       - name: No contact details hardcoded in the app
         run: |
@@ -32,7 +38,7 @@ jobs:
             exit 1
           fi
 
-      # The AppTest smoke suite (tests/test_app_smoke.py) is deliberately not run here:
-      # it needs streamlit + langchain + chromadb installed, which turns a 40 second
-      # gate into a 10 minute one. It runs locally in the pre-commit hook, where the
-      # real venv already exists.
+      # tests/test_app_smoke.py (the Streamlit AppTest suite) is the one deliberate
+      # local-only gap: streamlit + langchain + chromadb turn a 40s gate into a 10min
+      # one. It runs in the local pre-commit hook. The wiring guard above fails if that
+      # exclusion is ever widened without being declared.
