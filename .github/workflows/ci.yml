@@ -1,4 +1,4 @@
-name: CI
+name: CI and deploy
 
 # Every push, every branch: a push that skips the eval is how a broken build reaches
 # the live app at yangresume.work.
@@ -42,3 +42,37 @@ jobs:
       # local-only gap: streamlit + langchain + chromadb turn a 40s gate into a 10min
       # one. It runs in the local pre-commit hook. The wiring guard above fails if that
       # exclusion is ever widened without being declared.
+
+  # Deploy runs only from master, only after the eval job passed, and only on this Mac:
+  # the app is served by launchd (com.yang.resume-agent) behind the Cloudflare tunnel,
+  # so there is no remote host to push to. No actions/checkout here on purpose: the
+  # canonical working copy at /Users/yang/projects/resume-agent is the thing that gets
+  # served, so the job pulls that copy rather than deploying a fresh clone.
+  deploy:
+    needs: eval
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: [self-hosted, macOS, deploy]
+    steps:
+      - name: Pull the canonical checkout
+        run: |
+          set -euo pipefail
+          cd /Users/yang/projects/resume-agent
+          git fetch --prune origin
+          git pull --ff-only origin master
+          git --no-pager log -1 --format='deploying %h %s'
+
+      - name: Restart the app
+        run: launchctl kickstart -k gui/$(id -u)/com.yang.resume-agent
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 45); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8501/healthz > /dev/null; then
+              echo "healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::app did not answer /healthz within 45s"
+          exit 1
