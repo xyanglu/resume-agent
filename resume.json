@@ -1,7 +1,7 @@
 {
   "name": "Yang Lu",
   "contact": {
-    "location": "Greater Toronto Area, Canada (open to relocation)",
+    "location": "Toronto, Canada (relocating to the US, New York preferred)",
     "email": "yang.lu.tech@gmail.com",
     "linkedin": "linkedin.com/in/-yang-lu",
     "website": "xyanglu.github.io",
@@ -71,10 +71,10 @@
       ]
     },
     {
-      "title": "LLM Evaluation Toolkit",
+      "title": "LLM Evaluation Harness",
       "subtitle": "Python, asyncio, httpx, OpenRouter API, Rich",
       "bullets": [
-        "Open-source multi-model LLM evaluation framework: async parallel scoring with LLM-as-judge relevance assessment, hallucination detection, and latency benchmarking across multiple AI providers.",
+        "Open-source multi-model LLM evaluation harness: async parallel scoring with LLM-as-judge relevance assessment, hallucination detection, and latency benchmarking across multiple AI providers.",
         "Second suite covers agent behaviour: 8 deterministic grader families over 21 cases (tool-call correctness, grounded claims, instruction-override resistance, failure honesty, timeline consistency)."
       ]
     },

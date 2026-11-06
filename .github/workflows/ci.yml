@@ -2,19 +2,37 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  unit-tests:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install test dependencies
-        run: pip install pytest requests
-      - name: Run unit tests
-        run: python -m pytest -q
+
+      - name: Install light test deps
+        run: pip install --quiet pytest requests
+
+      - name: Syntax check every module
+        run: python -m compileall -q .
+
+      - name: Unit tests
+        run: python -m pytest tests/test_response_verifier.py tests/test_resume_eval.py -q
+
+      - name: No contact details hardcoded in the app
+        run: |
+          if grep -nE "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}" streamlit_app.py; then
+            echo "::error::streamlit_app.py exposes an email address"
+            exit 1
+          fi
+
+      # The AppTest smoke suite (tests/test_app_smoke.py) is deliberately not run here:
+      # it needs streamlit + langchain + chromadb installed, which turns a 40 second
+      # gate into a 10 minute one. It runs locally in the pre-commit hook, where the
+      # real venv already exists.
