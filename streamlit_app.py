@@ -65,7 +65,7 @@ MAX_QUERIES = int(os.environ.get("MAX_QUERIES", "5"))
 RESUME_SOURCE_URL_ENV = "RESUME_URL"
 OWNER_HASH = "d4c5627c"
 
-from jd_skills import extract_jd_skills
+from jd_skills import extract_jd_skills, skill_in_text
 
 
 def parse_jd_text(raw_text):
@@ -291,6 +291,8 @@ def _skill_present(skill, haystack):
     resume that says "agent infrastructure" and "LangGraph" scored a gap on
     "agents". That is a measurement artifact, not a missing skill.
     """
+    if skill_in_text(skill, haystack):
+        return True
     s = str(skill).lower().strip()
     variants = {s, s.replace("-", " "), s.replace("-", ""), s.rstrip("s")}
     variants |= set(SKILL_ALIASES.get(s, []))
@@ -344,12 +346,19 @@ RISK NOTES: {risk_notes}
 
 RESUME CONTEXT: {context}"""
 
-SYSTEM_WITH_JD = """You are Yang's AI resume assistant. You have access to Yang's resume content and a specific job description. Your job is to compare Yang's qualifications against the job requirements and answer questions about fit, alignment, strengths, and gaps. Be specific and reference actual experience that matches the JD requirements. If something is not in the resume, say so. Keep responses concise and professional.
+SYSTEM_WITH_JD = """You are Yang's AI resume assistant. You have the full resume below and a specific job description. Compare Yang's qualifications against the JD and answer questions about fit, strengths and gaps.
+
+Rules:
+- Ground every claim in the resume. You are given the whole resume, so a real gap is a real gap. Do not infer one from a section that simply does not mention it.
+- When a gap is real, say it once, then name the closest adjacent evidence in the resume (transferable work, same class of problem).
+- Do not describe shipped or publicly deployed projects as academic, personal or side projects. If the resume says a project is deployed and publicly accessible, treat it as shipped work.
+- Do not invent requirements that are not in the JD, and do not downgrade a skill the resume lists.
+- Be concise. No em dashes: use commas, colons or full stops.
 
 RISK NOTES: {risk_notes}
 ROLE CONTEXT: {role_context}
 JOB DESCRIPTION ({title} at {company}): {jd}
-RESUME CONTEXT: {context}"""
+RESUME (full): {context}"""
 
 ACCESS_LOCKED_CSS = """
 <style>
@@ -616,6 +625,12 @@ def main():
         vs = getattr(st.session_state, "vs", None)
         chunks = getattr(st.session_state, "chunks", [])
         context = retrieve_context(vs, chunks, user_input)
+        # A JD comparison is an absence question ("what is he missing?"). Four retrieved
+        # chunks are about a third of the resume, so the model answered "not listed" about
+        # skills that were sitting in chunks it never saw. The whole resume is ~6k chars,
+        # cheap enough to send in full whenever a JD is loaded.
+        if jd_entry and st.session_state.get("resume_text"):
+            context = st.session_state["resume_text"]
         flags = st.session_state.get("risk_flags", [])
         if flags:
             risk_notes = "Items flagged:"

@@ -48,6 +48,7 @@
       "dates": "07/2016 – 07/2020",
       "bullets": [
         "Extended Java batch loaders (Spring Boot + Hibernate) consuming external listing feeds into MySQL and ElasticSearch via Quartz scheduler, supporting a catalogue of 250,000 active listings.",
+        "Ran data-quality checks on inbound listing feeds: field validation, integrity and accuracy checks against the source, and deduplication before records entered the catalogue.",
         "Debugged retrieval gaps where a stored listing existed but would not surface in search, isolating ingestion, mapping and query causes in an Elasticsearch index owned by another team.",
         "Modified existing Spring REST endpoints and integrated external data sources via REST APIs; improved photo download times 50x by switching from FTP to REST and saved 1TB+ of disk with automated cleanup.",
         "Performed code reviews for junior engineers and used Jira/Confluence for Agile delivery in an enterprise environment."
@@ -152,7 +153,9 @@
       "items": [
         "Docker",
         "Hugging Face Spaces deployment",
-        "Linux/macOS server administration"
+        "Linux/macOS server administration",
+        "AWS (EC2, Lambda, S3)",
+        "Google Cloud Platform (GCP)"
       ]
     }
   ],
